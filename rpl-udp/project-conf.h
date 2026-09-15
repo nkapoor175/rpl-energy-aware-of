@@ -24,4 +24,9 @@
  * energy (see nbr_energy_percent() in rpl-energy-of.c). */
 #define RPL_CONF_WITH_MC 1
 
+/* Off by default on cooja/native; needed for
+ * rpl_energy_of_get_own_energy_percent() to read real CPU/radio on-time
+ * instead of always returning 0. */
+#define ENERGEST_CONF_ON 1
+
 #endif /* PROJECT_CONF_H_ */

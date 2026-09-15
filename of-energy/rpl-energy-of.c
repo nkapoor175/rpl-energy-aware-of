@@ -20,10 +20,17 @@
  * Each is left as a TODO at the point it will hook in, so the file's
  * structure won't need to change when they're added.
  *
- * Residual energy is also currently a STUB (see
- * rpl_energy_of_get_own_energy_percent) that always reports "full battery".
- * It needs to be wired to Contiki-NG's Energest module (separate checklist
- * item) before the energy term carries any real signal.
+ * Residual energy comes from Contiki-NG's Energest module (see
+ * rpl_energy_of_get_own_energy_percent): cumulative CPU/LPM/radio on-time
+ * is converted to consumed energy using an assumed current draw per state
+ * (RPL_ENERGY_OF_*_MA below, Tmote Sky-class figures) and an assumed
+ * starting battery capacity (RPL_ENERGY_OF_CONF_BATTERY_CAPACITY_MJ). Both
+ * are simulation-design choices, not code correctness ones -- the default
+ * capacity is picked to visibly deplete over a Cooja-scale run (minutes),
+ * not to model a real battery's lifetime. Override per-experiment via
+ * project-conf.h once the team agrees on evaluation timescales.
+ * Requires ENERGEST_CONF_ON 1 (off by default on cooja/native), set in
+ * project-conf.h.
  *
  * Normalization bounds below are fixed constants rather than dynamically
  * computed from the current neighbor set. This keeps the baseline simple;
@@ -36,6 +43,7 @@
 #include "net/routing/rpl-lite/rpl-energy-of.h"
 #include "net/nbr-table.h"
 #include "net/link-stats.h"
+#include "sys/energest.h"
 
 #include "sys/log.h"
 #define LOG_MODULE "RPL"
@@ -94,17 +102,68 @@
 
 /*---------------------------------------------------------------------------*/
 #if RPL_WITH_MC
-/* TODO (Energest wiring, checklist item 3): replace this stub with a real
- * reading from Contiki-NG's Energest module (e.g. normalize
- * energest_type_time(ENERGEST_TYPE_CPU/LISTEN/TRANSMIT) against an assumed
- * battery capacity). Always reporting "full" means the energy term is
- * currently a no-op placeholder. Only used when RPL_WITH_MC is enabled,
- * since that's the only case the value is ever advertised (see
- * update_metric_container below). */
+/* Assumed current draw per Energest state, in mA (Tmote Sky-class figures,
+ * commonly used in RPL energy literature). Override via project-conf.h if
+ * modeling a different platform. */
+#ifndef RPL_ENERGY_OF_CONF_CPU_MA
+#define RPL_ENERGY_OF_CPU_MA 1.8
+#else
+#define RPL_ENERGY_OF_CPU_MA RPL_ENERGY_OF_CONF_CPU_MA
+#endif
+
+#ifndef RPL_ENERGY_OF_CONF_LPM_MA
+#define RPL_ENERGY_OF_LPM_MA 0.0545
+#else
+#define RPL_ENERGY_OF_LPM_MA RPL_ENERGY_OF_CONF_LPM_MA
+#endif
+
+#ifndef RPL_ENERGY_OF_CONF_TRANSMIT_MA
+#define RPL_ENERGY_OF_TRANSMIT_MA 17.7
+#else
+#define RPL_ENERGY_OF_TRANSMIT_MA RPL_ENERGY_OF_CONF_TRANSMIT_MA
+#endif
+
+#ifndef RPL_ENERGY_OF_CONF_LISTEN_MA
+#define RPL_ENERGY_OF_LISTEN_MA 20.0
+#else
+#define RPL_ENERGY_OF_LISTEN_MA RPL_ENERGY_OF_CONF_LISTEN_MA
+#endif
+
+#define RPL_ENERGY_OF_SUPPLY_VOLTAGE 3.0
+
+/* Assumed starting battery capacity, in millijoules. Deliberately small so
+ * depletion is visible within a Cooja-scale run; NOT a real battery's
+ * capacity. Revisit once the team settles on simulated run durations for
+ * the actual evaluation (10/30/50-node, FND/HND/LND runs). */
+#ifndef RPL_ENERGY_OF_CONF_BATTERY_CAPACITY_MJ
+#define RPL_ENERGY_OF_BATTERY_CAPACITY_MJ 500000.0
+#else
+#define RPL_ENERGY_OF_BATTERY_CAPACITY_MJ RPL_ENERGY_OF_CONF_BATTERY_CAPACITY_MJ
+#endif
+
 static uint8_t
 rpl_energy_of_get_own_energy_percent(void)
 {
-  return ENERGY_MAX;
+  double consumed_mj;
+  double remaining_fraction;
+
+  energest_flush();
+
+  consumed_mj = RPL_ENERGY_OF_SUPPLY_VOLTAGE * (
+    RPL_ENERGY_OF_CPU_MA * ((double)energest_type_time(ENERGEST_TYPE_CPU) / ENERGEST_SECOND) +
+    RPL_ENERGY_OF_LPM_MA * ((double)energest_type_time(ENERGEST_TYPE_LPM) / ENERGEST_SECOND) +
+    RPL_ENERGY_OF_TRANSMIT_MA * ((double)energest_type_time(ENERGEST_TYPE_TRANSMIT) / ENERGEST_SECOND) +
+    RPL_ENERGY_OF_LISTEN_MA * ((double)energest_type_time(ENERGEST_TYPE_LISTEN) / ENERGEST_SECOND)
+  );
+
+  remaining_fraction = 1.0 - (consumed_mj / RPL_ENERGY_OF_BATTERY_CAPACITY_MJ);
+  if(remaining_fraction < 0.0) {
+    remaining_fraction = 0.0;
+  } else if(remaining_fraction > 1.0) {
+    remaining_fraction = 1.0;
+  }
+
+  return (uint8_t)(remaining_fraction * ENERGY_MAX);
 }
 #endif /* RPL_WITH_MC */
 /*---------------------------------------------------------------------------*/
