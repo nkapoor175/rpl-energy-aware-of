@@ -12,12 +12,14 @@
  *
  * where all three terms are min-max normalized to [0, 1] and w1+w2+w3 = 1.
  *
- * STATUS: this is the BASELINE skeleton only (see CLAUDE.md checklist).
- * The three novel mechanisms are intentionally NOT implemented yet:
- *   - energy-gated filtering (hard exclusion of low-battery neighbors)
- *   - depletion-rate tracking (rolling history instead of a snapshot)
- *   - local adaptive weighting (w2 adjusted from observed neighbor variance)
- * Each is left as a TODO at the point it will hook in, so the file's
+ * STATUS: baseline + mechanism 1 of 3 (see CLAUDE.md checklist).
+ *   - energy-gated filtering: IMPLEMENTED (see nbr_is_acceptable_parent /
+ *     compute_energy_gate_threshold below)
+ *   - depletion-rate tracking (rolling history instead of a snapshot): TODO,
+ *     depends on Ananya's DIO extension work
+ *   - local adaptive weighting (w2 adjusted from observed neighbor variance):
+ *     TODO, depends on Ananya's DIO extension work
+ * Each remaining TODO is left at the point it will hook in, so the file's
  * structure won't need to change when they're added.
  *
  * Residual energy comes from Contiki-NG's Energest module (see
@@ -32,11 +34,11 @@
  * Requires ENERGEST_CONF_ON 1 (off by default on cooja/native), set in
  * project-conf.h.
  *
- * Normalization bounds below are fixed constants rather than dynamically
- * computed from the current neighbor set. This keeps the baseline simple;
- * energy-gated filtering will need to scan the neighbor set anyway, so
- * dynamic (min-max over currently visible neighbors) normalization can be
- * added at that point if fixed bounds prove too coarse.
+ * Normalization bounds below are still fixed constants rather than
+ * dynamically computed from the current neighbor set. Energy-gated
+ * filtering does scan the neighbor set (see compute_energy_gate_threshold),
+ * but that's a separate pass for the percentile threshold, not a rework of
+ * the min-max normalization used in scoring.
  */
 
 #include "net/routing/rpl-lite/rpl.h"
@@ -44,6 +46,11 @@
 #include "net/nbr-table.h"
 #include "net/link-stats.h"
 #include "sys/energest.h"
+
+/* The RPL Lite neighbor table, declared in rpl-neighbor.c. Needed to
+ * iterate all currently visible neighbors for the energy-gated filtering
+ * percentile threshold below. */
+NBR_TABLE_DECLARE(rpl_neighbors);
 
 #include "sys/log.h"
 #define LOG_MODULE "RPL"
@@ -99,6 +106,14 @@
  * and defaults as rpl-mrhof.c. */
 #define RANK_THRESHOLD 192
 #define TIME_THRESHOLD (10 * 60 * CLOCK_SECOND)
+
+/* Energy-gated filtering: a neighbor is hard-excluded from scoring if its
+ * residual energy falls in the bottom ENERGY_GATE_PERCENTILE% of currently
+ * visible neighbors. Below ENERGY_GATE_MIN_NEIGHBORS neighbors, "bottom
+ * 20%" isn't a meaningful signal (e.g. with 2 neighbors it would just
+ * exclude whichever one has less energy, always), so the gate is disabled. */
+#define ENERGY_GATE_PERCENTILE 20
+#define ENERGY_GATE_MIN_NEIGHBORS 5
 
 /*---------------------------------------------------------------------------*/
 #if RPL_WITH_MC
@@ -237,10 +252,10 @@ weighted_link_cost(rpl_nbr_t *nbr)
   uint16_t energy_norm = normalize_milli(energy_pct, ENERGY_MIN, ENERGY_MAX);
   uint16_t hop_norm = normalize_milli(hopcount, HOPCOUNT_MIN, HOPCOUNT_MAX);
 
-  /* TODO (energy-gated filtering, checklist item): before scoring, exclude
-   * candidates whose residual energy falls in the bottom 20% of currently
-   * visible neighbors. That is a hard-exclusion stage in
-   * nbr_is_acceptable_parent(), not a change to this scoring formula. */
+  /* Energy-gated filtering already excluded low-energy candidates before
+   * this function is reached (see nbr_is_acceptable_parent /
+   * compute_energy_gate_threshold) -- this is scoring among the survivors,
+   * not where the exclusion happens. */
 
   /* TODO (depletion-rate tracking, checklist item): fold in a penalty based
    * on the neighbor's rate of energy decline (rolling DIO history), not
@@ -293,18 +308,64 @@ nbr_has_usable_link(rpl_nbr_t *nbr)
   return link_metric <= MAX_LINK_METRIC;
 }
 /*---------------------------------------------------------------------------*/
+/* The residual-energy value at the ENERGY_GATE_PERCENTILE-th percentile of
+ * currently visible neighbors, i.e. the cutoff below which a neighbor is
+ * considered "bottom 20%" and hard-excluded. Returns ENERGY_MIN (0, i.e.
+ * gate disabled / nobody excluded) when there aren't enough neighbors for
+ * the percentile to be meaningful.
+ *
+ * This is a separate pass over the neighbor table from the scoring in
+ * weighted_link_cost() -- deliberately so: filtering must see the whole
+ * candidate set to define "bottom 20%", while scoring only ever looks at
+ * one candidate at a time. */
+static uint8_t
+compute_energy_gate_threshold(void)
+{
+  uint8_t energies[NBR_TABLE_MAX_NEIGHBORS];
+  int n = 0;
+  int i, j, idx;
+  uint8_t tmp;
+  rpl_nbr_t *nbr;
+
+  for(nbr = nbr_table_head(rpl_neighbors); nbr != NULL && n < NBR_TABLE_MAX_NEIGHBORS;
+      nbr = nbr_table_next(rpl_neighbors, nbr)) {
+    energies[n++] = nbr_energy_percent(nbr);
+  }
+
+  if(n < ENERGY_GATE_MIN_NEIGHBORS) {
+    return ENERGY_MIN;
+  }
+
+  /* Insertion sort ascending; n is small (<= NBR_TABLE_MAX_NEIGHBORS). */
+  for(i = 1; i < n; i++) {
+    tmp = energies[i];
+    j = i - 1;
+    while(j >= 0 && energies[j] > tmp) {
+      energies[j + 1] = energies[j];
+      j--;
+    }
+    energies[j + 1] = tmp;
+  }
+
+  idx = (n * ENERGY_GATE_PERCENTILE) / 100;
+  return energies[idx];
+}
+/*---------------------------------------------------------------------------*/
 static int
 nbr_is_acceptable_parent(rpl_nbr_t *nbr)
 {
-  uint16_t path_cost = nbr_path_cost(nbr);
+  uint16_t path_cost;
 
-  /* TODO (energy-gated filtering, checklist item): this is where the hard
-   * exclusion stage belongs, e.g.:
-   *   if(nbr_energy_percent(nbr) < dynamic_bottom_20pct_threshold()) {
-   *     return 0;
-   *   }
-   * before falling through to the scoring-based checks below. */
+  /* Energy-gated filtering: hard-exclude candidates in the bottom
+   * ENERGY_GATE_PERCENTILE% of currently visible neighbors' residual
+   * energy, before any weighted scoring happens. This is a two-stage
+   * design (filter, then score), not a soft weight adjustment -- a
+   * candidate excluded here never reaches weighted_link_cost(). */
+  if(nbr_energy_percent(nbr) < compute_energy_gate_threshold()) {
+    return 0;
+  }
 
+  path_cost = nbr_path_cost(nbr);
   return nbr_has_usable_link(nbr) && path_cost <= MAX_PATH_COST;
 }
 /*---------------------------------------------------------------------------*/
