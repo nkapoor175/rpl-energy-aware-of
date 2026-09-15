@@ -39,6 +39,19 @@
  * filtering does scan the neighbor set (see compute_energy_gate_threshold),
  * but that's a separate pass for the percentile threshold, not a rework of
  * the min-max normalization used in scoring.
+ *
+ * ABLATION CONFIGS: each mechanism can be toggled independently via
+ * project-conf.h, so the ablation study (OF with only gating / only
+ * depletion / only adaptive weighting / all three) doesn't need separate
+ * source files:
+ *   RPL_ENERGY_OF_CONF_ENABLE_GATING              (default 1, implemented)
+ *   RPL_ENERGY_OF_CONF_ENABLE_DEPLETION            (default 0, reserved --
+ *     no-op until the depletion-rate mechanism itself is implemented)
+ *   RPL_ENERGY_OF_CONF_ENABLE_ADAPTIVE_WEIGHTING   (default 0, reserved --
+ *     no-op until the adaptive-weighting mechanism itself is implemented)
+ * The baseline weighted-sum formula itself is not gated by a toggle -- it's
+ * always active, since every ablation config and the full combined OF are
+ * all "baseline + a subset of mechanisms," never baseline-less.
  */
 
 #include "net/routing/rpl-lite/rpl.h"
@@ -55,6 +68,26 @@ NBR_TABLE_DECLARE(rpl_neighbors);
 #include "sys/log.h"
 #define LOG_MODULE "RPL"
 #define LOG_LEVEL LOG_LEVEL_RPL
+
+/*---------------------------------------------------------------------------*/
+/* Ablation toggles -- see the ABLATION CONFIGS note in the file header. */
+#ifndef RPL_ENERGY_OF_CONF_ENABLE_GATING
+#define RPL_ENERGY_OF_ENABLE_GATING 1
+#else
+#define RPL_ENERGY_OF_ENABLE_GATING RPL_ENERGY_OF_CONF_ENABLE_GATING
+#endif
+
+#ifndef RPL_ENERGY_OF_CONF_ENABLE_DEPLETION
+#define RPL_ENERGY_OF_ENABLE_DEPLETION 0
+#else
+#define RPL_ENERGY_OF_ENABLE_DEPLETION RPL_ENERGY_OF_CONF_ENABLE_DEPLETION
+#endif
+
+#ifndef RPL_ENERGY_OF_CONF_ENABLE_ADAPTIVE_WEIGHTING
+#define RPL_ENERGY_OF_ENABLE_ADAPTIVE_WEIGHTING 0
+#else
+#define RPL_ENERGY_OF_ENABLE_ADAPTIVE_WEIGHTING RPL_ENERGY_OF_CONF_ENABLE_ADAPTIVE_WEIGHTING
+#endif
 
 /*---------------------------------------------------------------------------*/
 /* Weights (milli-units, i.e. parts per 1000, so they sum to 1000). Override
@@ -257,9 +290,11 @@ weighted_link_cost(rpl_nbr_t *nbr)
    * compute_energy_gate_threshold) -- this is scoring among the survivors,
    * not where the exclusion happens. */
 
-  /* TODO (depletion-rate tracking, checklist item): fold in a penalty based
-   * on the neighbor's rate of energy decline (rolling DIO history), not
-   * just this energy_norm snapshot. */
+  /* TODO (depletion-rate tracking, checklist item, Ananya's DIO work):
+   * fold in a penalty based on the neighbor's rate of energy decline
+   * (rolling DIO history), not just this energy_norm snapshot. Guard the
+   * addition with "#if RPL_ENERGY_OF_ENABLE_DEPLETION" so the ablation
+   * toggle in the file header actually does something once this lands. */
 
   uint32_t score_milli =
     (uint32_t)W1_ETX_MILLI * etx_norm +
@@ -308,6 +343,7 @@ nbr_has_usable_link(rpl_nbr_t *nbr)
   return link_metric <= MAX_LINK_METRIC;
 }
 /*---------------------------------------------------------------------------*/
+#if RPL_ENERGY_OF_ENABLE_GATING
 /* The residual-energy value at the ENERGY_GATE_PERCENTILE-th percentile of
  * currently visible neighbors, i.e. the cutoff below which a neighbor is
  * considered "bottom 20%" and hard-excluded. Returns ENERGY_MIN (0, i.e.
@@ -317,7 +353,8 @@ nbr_has_usable_link(rpl_nbr_t *nbr)
  * This is a separate pass over the neighbor table from the scoring in
  * weighted_link_cost() -- deliberately so: filtering must see the whole
  * candidate set to define "bottom 20%", while scoring only ever looks at
- * one candidate at a time. */
+ * one candidate at a time. Compiled out entirely when
+ * RPL_ENERGY_OF_ENABLE_GATING is 0 (ablation config without gating). */
 static uint8_t
 compute_energy_gate_threshold(void)
 {
@@ -350,12 +387,14 @@ compute_energy_gate_threshold(void)
   idx = (n * ENERGY_GATE_PERCENTILE) / 100;
   return energies[idx];
 }
+#endif /* RPL_ENERGY_OF_ENABLE_GATING */
 /*---------------------------------------------------------------------------*/
 static int
 nbr_is_acceptable_parent(rpl_nbr_t *nbr)
 {
   uint16_t path_cost;
 
+#if RPL_ENERGY_OF_ENABLE_GATING
   /* Energy-gated filtering: hard-exclude candidates in the bottom
    * ENERGY_GATE_PERCENTILE% of currently visible neighbors' residual
    * energy, before any weighted scoring happens. This is a two-stage
@@ -364,6 +403,7 @@ nbr_is_acceptable_parent(rpl_nbr_t *nbr)
   if(nbr_energy_percent(nbr) < compute_energy_gate_threshold()) {
     return 0;
   }
+#endif /* RPL_ENERGY_OF_ENABLE_GATING */
 
   path_cost = nbr_path_cost(nbr);
   return nbr_has_usable_link(nbr) && path_cost <= MAX_PATH_COST;
@@ -435,11 +475,18 @@ update_metric_container(void)
   curr_instance.mc.obj.energy.flags = RPL_DAG_MC_ENERGY_TYPE_BATTERY << RPL_DAG_MC_ENERGY_TYPE;
   curr_instance.mc.obj.energy.energy_est = rpl_energy_of_get_own_energy_percent();
 
-  /* TODO (local adaptive weighting, checklist item): every K DIO intervals,
-   * inspect the spread of nbr_energy_percent() across current neighbors and
-   * nudge W2_ENERGY_MILLI (and W1/W3 to compensate, keeping the sum at
-   * 1000) up or down. Needs the DIO extension to carry depletion-rate data
-   * too, not just the snapshot already carried by RPL_DAG_MC_ENERGY. */
+  /* TODO (local adaptive weighting, checklist item, Ananya's DIO work):
+   * every K DIO intervals, inspect the spread of nbr_energy_percent()
+   * across current neighbors and nudge W2_ENERGY_MILLI (and W1/W3 to
+   * compensate, keeping the sum at 1000) up or down. Needs the DIO
+   * extension to carry depletion-rate data too, not just the snapshot
+   * already carried by RPL_DAG_MC_ENERGY. Guard with
+   * "#if RPL_ENERGY_OF_ENABLE_ADAPTIVE_WEIGHTING" so the ablation toggle in
+   * the file header actually does something once this lands. Weights
+   * (W1_ETX_MILLI etc.) are currently #define constants set at compile
+   * time -- adaptive weighting will need to turn them into mutable state
+   * (e.g. static variables initialized from the same defaults) since they
+   * change at runtime. */
 }
 #endif /* RPL_WITH_MC */
 /*---------------------------------------------------------------------------*/
