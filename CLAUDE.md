@@ -75,10 +75,10 @@ Ablation studies matter, we need to be able to claim which specific mechanism co
 
 <!-- Update this section as work progresses, so Claude Code always knows where things actually stand -->
 
-- [ ] Confirm whether this Contiki-NG checkout uses RPL Classic or RPL Lite, and locate the correct OF interface files
-- [ ] Build `of-energy.c` skeleton with the baseline static weighted-sum formula (no novel mechanisms yet)
-- [ ] Wire up Energest-based residual energy tracking per node
-- [ ] Get baseline weighted-sum OF running end-to-end in a small Cooja test (5 to 10 nodes) before scaling up
+- [x] Confirm whether this Contiki-NG checkout uses RPL Classic or RPL Lite, and locate the correct OF interface files — confirmed RPL Lite (default `MAKE_ROUTING_RPL_LITE` in `Makefile.include`, no override in the example). OF interface is `struct rpl_of` in `os/net/routing/rpl-lite/rpl-types.h`; reference implementations are `rpl-mrhof.c`/`rpl-of0.c` in the same directory.
+- [x] Build `of-energy.c` skeleton with the baseline static weighted-sum formula (no novel mechanisms yet) — done as `of-energy/rpl-energy-of.c` + `rpl-energy-of.h`, see `of-energy/README.md` for the integration steps (copy into Contiki-NG + one-line patch to `rpl-dag.c`). Builds clean with `make TARGET=native`. All three novel mechanisms are marked as TODOs at their hook points, not yet implemented.
+- [ ] Wire up Energest-based residual energy tracking per node — currently a stub (`rpl_energy_of_get_own_energy_percent()` always returns "full battery")
+- [ ] Get baseline weighted-sum OF running end-to-end in a small Cooja test (5 to 10 nodes) before scaling up — only native build tested so far, not Cooja
 - [ ] Implement energy-gated filtering
 - [ ] Implement depletion-rate tracking (requires DIO extension first)
 - [ ] Extend DIO messages to carry energy + depletion-rate data
