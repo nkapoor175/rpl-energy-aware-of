@@ -1,0 +1,384 @@
+Random seed: 123456
+236000 node-2 [INFO: Main      ] - Routing: RPL Lite
+236000 node-2 [INFO: Main      ] - Net: sicslowpan
+236000 node-2 [INFO: Main      ] - MAC: CSMA
+236000 node-2 [INFO: Main      ] - 802.15.4 PANID: 0xabcd
+236000 node-2 [INFO: Main      ] - 802.15.4 Default channel: 26
+236000 node-2 [INFO: Main      ] Node ID: 2
+236000 node-2 [INFO: Main      ] Link-layer address: 0002.0002.0002.0002
+236000 node-2 [INFO: Main      ] Tentative link-local IPv6 address: fe80::202:2:2:2
+250000 node-6 [INFO: Main      ] Starting Contiki-NG-develop/v5.2-146-g479555994-dirty
+250000 node-6 [INFO: Main      ] - Routing: RPL Lite
+250000 node-6 [INFO: Main      ] - Net: sicslowpan
+250000 node-6 [INFO: Main      ] - MAC: CSMA
+250000 node-6 [INFO: Main      ] - 802.15.4 PANID: 0xabcd
+250000 node-6 [INFO: Main      ] - 802.15.4 Default channel: 26
+250000 node-6 [INFO: Main      ] Node ID: 6
+250000 node-6 [INFO: Main      ] Link-layer address: 0006.0006.0006.0006
+250000 node-6 [INFO: Main      ] Tentative link-local IPv6 address: fe80::206:6:6:6
+348000 node-4 [INFO: Main      ] Starting Contiki-NG-develop/v5.2-146-g479555994-dirty
+348000 node-4 [INFO: Main      ] - Routing: RPL Lite
+348000 node-4 [INFO: Main      ] - Net: sicslowpan
+348000 node-4 [INFO: Main      ] - MAC: CSMA
+348000 node-4 [INFO: Main      ] - 802.15.4 PANID: 0xabcd
+348000 node-4 [INFO: Main      ] - 802.15.4 Default channel: 26
+348000 node-4 [INFO: Main      ] Node ID: 4
+348000 node-4 [INFO: Main      ] Link-layer address: 0004.0004.0004.0004
+348000 node-4 [INFO: Main      ] Tentative link-local IPv6 address: fe80::204:4:4:4
+382000 node-1 [INFO: Main      ] Starting Contiki-NG-develop/v5.2-146-g479555994-dirty
+382000 node-1 [INFO: Main      ] - Routing: RPL Lite
+382000 node-1 [INFO: Main      ] - Net: sicslowpan
+382000 node-1 [INFO: Main      ] - MAC: CSMA
+382000 node-1 [INFO: Main      ] - 802.15.4 PANID: 0xabcd
+382000 node-1 [INFO: Main      ] - 802.15.4 Default channel: 26
+382000 node-1 [INFO: Main      ] Node ID: 1
+382000 node-1 [INFO: Main      ] Link-layer address: 0001.0001.0001.0001
+382000 node-1 [INFO: Main      ] Tentative link-local IPv6 address: fe80::201:1:1:1
+715000 node-5 [INFO: Main      ] Starting Contiki-NG-develop/v5.2-146-g479555994-dirty
+715000 node-5 [INFO: Main      ] - Routing: RPL Lite
+715000 node-5 [INFO: Main      ] - Net: sicslowpan
+715000 node-5 [INFO: Main      ] - MAC: CSMA
+715000 node-5 [INFO: Main      ] - 802.15.4 PANID: 0xabcd
+715000 node-5 [INFO: Main      ] - 802.15.4 Default channel: 26
+715000 node-5 [INFO: Main      ] Node ID: 5
+715000 node-5 [INFO: Main      ] Link-layer address: 0005.0005.0005.0005
+715000 node-5 [INFO: Main      ] Tentative link-local IPv6 address: fe80::205:5:5:5
+899000 node-3 [INFO: Main      ] Starting Contiki-NG-develop/v5.2-146-g479555994-dirty
+899000 node-3 [INFO: Main      ] - Routing: RPL Lite
+899000 node-3 [INFO: Main      ] - Net: sicslowpan
+899000 node-3 [INFO: Main      ] - MAC: CSMA
+899000 node-3 [INFO: Main      ] - 802.15.4 PANID: 0xabcd
+899000 node-3 [INFO: Main      ] - 802.15.4 Default channel: 26
+899000 node-3 [INFO: Main      ] Node ID: 3
+899000 node-3 [INFO: Main      ] Link-layer address: 0003.0003.0003.0003
+899000 node-3 [INFO: Main      ] Tentative link-local IPv6 address: fe80::203:3:3:3
+3581000 node-3 [INFO: App       ] Not reachable yet
+3813000 node-2 [INFO: App       ] Not reachable yet
+5794000 node-5 [INFO: App       ] Not reachable yet
+7461000 node-4 [INFO: App       ] Not reachable yet
+9093000 node-6 [INFO: App       ] Not reachable yet
+13214000 node-2 [INFO: App       ] Not reachable yet
+13678000 node-3 [INFO: App       ] Not reachable yet
+15933000 node-5 [INFO: App       ] Not reachable yet
+17807000 node-4 [INFO: App       ] Not reachable yet
+19111000 node-6 [INFO: App       ] Not reachable yet
+22679000 node-3 [INFO: App       ] Tx/Rx/MissedTx: 0/0/0
+22679000 node-3 [INFO: App       ] Sending request 0 to fd00::201:1:1:1
+22691568 node-1 [INFO: App       ] Received request 'hello 0' from fd00::203:3:3:3
+22691568 node-1 [INFO: App       ] Sending response.
+22725568 node-3 [INFO: App       ] Received response 'hello 0' from fd00::201:1:1:1
+23951000 node-2 [INFO: App       ] Tx/Rx/MissedTx: 0/0/0
+23951000 node-2 [INFO: App       ] Sending request 0 to fd00::201:1:1:1
+23980568 node-1 [INFO: App       ] Received request 'hello 0' from fd00::202:2:2:2
+23980568 node-1 [INFO: App       ] Sending response.
+24006568 node-2 [INFO: App       ] Received response 'hello 0' from fd00::201:1:1:1
+25697000 node-5 [INFO: App       ] Tx/Rx/MissedTx: 0/0/0
+25697000 node-5 [INFO: App       ] Sending request 0 to fd00::201:1:1:1
+25756856 node-1 [INFO: App       ] Received request 'hello 0' from fd00::205:5:5:5
+25756856 node-1 [INFO: App       ] Sending response.
+25793112 node-5 [INFO: App       ] Received response 'hello 0' from fd00::201:1:1:1
+27383000 node-4 [INFO: App       ] Not reachable yet
+28918000 node-6 [INFO: App       ] Not reachable yet
+33359000 node-3 [INFO: App       ] Sending request 1 to fd00::201:1:1:1
+33379568 node-1 [INFO: App       ] Received request 'hello 1' from fd00::203:3:3:3
+33379568 node-1 [INFO: App       ] Sending response.
+33395568 node-3 [INFO: App       ] Received response 'hello 1' from fd00::201:1:1:1
+34868000 node-2 [INFO: App       ] Sending request 1 to fd00::201:1:1:1
+34909568 node-1 [INFO: App       ] Received request 'hello 1' from fd00::202:2:2:2
+34909568 node-1 [INFO: App       ] Sending response.
+34936568 node-2 [INFO: App       ] Received response 'hello 1' from fd00::201:1:1:1
+35325000 node-5 [INFO: App       ] Sending request 1 to fd00::201:1:1:1
+35349856 node-1 [INFO: App       ] Received request 'hello 1' from fd00::205:5:5:5
+35349856 node-1 [INFO: App       ] Sending response.
+35418112 node-5 [INFO: App       ] Received response 'hello 1' from fd00::201:1:1:1
+37339000 node-4 [INFO: App       ] Tx/Rx/MissedTx: 0/0/0
+37339000 node-4 [INFO: App       ] Sending request 0 to fd00::201:1:1:1
+37407856 node-1 [INFO: App       ] Received request 'hello 0' from fd00::204:4:4:4
+37407856 node-1 [INFO: App       ] Sending response.
+37439112 node-4 [INFO: App       ] Received response 'hello 0' from fd00::201:1:1:1
+38244000 node-6 [INFO: App       ] Not reachable yet
+44122000 node-3 [INFO: App       ] Sending request 2 to fd00::201:1:1:1
+44132568 node-1 [INFO: App       ] Received request 'hello 2' from fd00::203:3:3:3
+44132568 node-1 [INFO: App       ] Sending response.
+44160568 node-3 [INFO: App       ] Received response 'hello 2' from fd00::201:1:1:1
+45063000 node-5 [INFO: App       ] Sending request 2 to fd00::201:1:1:1
+45122856 node-1 [INFO: App       ] Received request 'hello 2' from fd00::205:5:5:5
+45122856 node-1 [INFO: App       ] Sending response.
+45141936 node-5 [INFO: App       ] Received response 'hello 2' from fd00::201:1:1:1
+45356000 node-2 [INFO: App       ] Sending request 2 to fd00::201:1:1:1
+45383568 node-1 [INFO: App       ] Received request 'hello 2' from fd00::202:2:2:2
+45383568 node-1 [INFO: App       ] Sending response.
+45389136 node-2 [INFO: App       ] Received response 'hello 2' from fd00::201:1:1:1
+46492000 node-4 [INFO: App       ] Sending request 1 to fd00::201:1:1:1
+46558856 node-1 [INFO: App       ] Received request 'hello 1' from fd00::204:4:4:4
+46558856 node-1 [INFO: App       ] Sending response.
+46589112 node-4 [INFO: App       ] Received response 'hello 1' from fd00::201:1:1:1
+48306000 node-6 [INFO: App       ] Not reachable yet
+53551000 node-3 [INFO: App       ] Sending request 3 to fd00::201:1:1:1
+53575568 node-1 [INFO: App       ] Received request 'hello 3' from fd00::203:3:3:3
+53575568 node-1 [INFO: App       ] Sending response.
+53584568 node-3 [INFO: App       ] Received response 'hello 3' from fd00::201:1:1:1
+54150000 node-5 [INFO: App       ] Sending request 3 to fd00::201:1:1:1
+54209856 node-1 [INFO: App       ] Received request 'hello 3' from fd00::205:5:5:5
+54209856 node-1 [INFO: App       ] Sending response.
+54248112 node-5 [INFO: App       ] Received response 'hello 3' from fd00::201:1:1:1
+54848000 node-2 [INFO: App       ] Sending request 3 to fd00::201:1:1:1
+54860568 node-1 [INFO: App       ] Received request 'hello 3' from fd00::202:2:2:2
+54860568 node-1 [INFO: App       ] Sending response.
+54905568 node-2 [INFO: App       ] Received response 'hello 3' from fd00::201:1:1:1
+56773000 node-4 [INFO: App       ] Sending request 2 to fd00::201:1:1:1
+56799856 node-1 [INFO: App       ] Received request 'hello 2' from fd00::204:4:4:4
+56799856 node-1 [INFO: App       ] Sending response.
+56844112 node-4 [INFO: App       ] Received response 'hello 2' from fd00::201:1:1:1
+57407000 node-6 [INFO: App       ] Tx/Rx/MissedTx: 0/0/0
+57407000 node-6 [INFO: App       ] Sending request 0 to fd00::201:1:1:1
+57505856 node-1 [INFO: App       ] Received request 'hello 0' from fd00::206:6:6:6
+57505856 node-1 [INFO: App       ] Sending response.
+57591368 node-6 [INFO: App       ] Received response 'hello 0' from fd00::201:1:1:1
+63912000 node-2 [INFO: App       ] Sending request 4 to fd00::201:1:1:1
+63935000 node-3 [INFO: App       ] Sending request 4 to fd00::201:1:1:1
+63940568 node-1 [INFO: App       ] Received request 'hello 4' from fd00::203:3:3:3
+63940568 node-1 [INFO: App       ] Sending response.
+63945568 node-1 [INFO: App       ] Received request 'hello 4' from fd00::202:2:2:2
+63945568 node-1 [INFO: App       ] Sending response.
+63951568 node-2 [INFO: App       ] Received response 'hello 4' from fd00::201:1:1:1
+63969568 node-3 [INFO: App       ] Received response 'hello 4' from fd00::201:1:1:1
+63972000 node-5 [INFO: App       ] Sending request 4 to fd00::201:1:1:1
+64017856 node-1 [INFO: App       ] Received request 'hello 4' from fd00::205:5:5:5
+64017856 node-1 [INFO: App       ] Sending response.
+64047112 node-5 [INFO: App       ] Received response 'hello 4' from fd00::201:1:1:1
+66809000 node-4 [INFO: App       ] Sending request 3 to fd00::201:1:1:1
+66832856 node-1 [INFO: App       ] Received request 'hello 3' from fd00::204:4:4:4
+66832856 node-1 [INFO: App       ] Sending response.
+66914112 node-4 [INFO: App       ] Received response 'hello 3' from fd00::201:1:1:1
+66991000 node-6 [INFO: App       ] Sending request 1 to fd00::201:1:1:1
+67083856 node-1 [INFO: App       ] Received request 'hello 1' from fd00::206:6:6:6
+67083856 node-1 [INFO: App       ] Sending response.
+67144368 node-6 [INFO: App       ] Received response 'hello 1' from fd00::201:1:1:1
+73023000 node-2 [INFO: App       ] Sending request 5 to fd00::201:1:1:1
+73056568 node-1 [INFO: App       ] Received request 'hello 5' from fd00::202:2:2:2
+73056568 node-1 [INFO: App       ] Sending response.
+73091568 node-2 [INFO: App       ] Received response 'hello 5' from fd00::201:1:1:1
+73903000 node-5 [INFO: App       ] Sending request 5 to fd00::201:1:1:1
+73932856 node-1 [INFO: App       ] Received request 'hello 5' from fd00::205:5:5:5
+73932856 node-1 [INFO: App       ] Sending response.
+73973112 node-5 [INFO: App       ] Received response 'hello 5' from fd00::201:1:1:1
+74652000 node-3 [INFO: App       ] Sending request 5 to fd00::201:1:1:1
+74697568 node-1 [INFO: App       ] Received request 'hello 5' from fd00::203:3:3:3
+74697568 node-1 [INFO: App       ] Sending response.
+74703136 node-3 [INFO: App       ] Received response 'hello 5' from fd00::201:1:1:1
+75987000 node-4 [INFO: App       ] Sending request 4 to fd00::201:1:1:1
+76038856 node-1 [INFO: App       ] Received request 'hello 4' from fd00::204:4:4:4
+76038856 node-1 [INFO: App       ] Sending response.
+76075112 node-4 [INFO: App       ] Received response 'hello 4' from fd00::201:1:1:1
+76533000 node-6 [INFO: App       ] Sending request 2 to fd00::201:1:1:1
+76592856 node-1 [INFO: App       ] Received request 'hello 2' from fd00::206:6:6:6
+76592856 node-1 [INFO: App       ] Sending response.
+76686368 node-6 [INFO: App       ] Received response 'hello 2' from fd00::201:1:1:1
+83241000 node-2 [INFO: App       ] Sending request 6 to fd00::201:1:1:1
+83260568 node-1 [INFO: App       ] Received request 'hello 6' from fd00::202:2:2:2
+83260568 node-1 [INFO: App       ] Sending response.
+83275568 node-2 [INFO: App       ] Received response 'hello 6' from fd00::201:1:1:1
+84123000 node-5 [INFO: App       ] Sending request 6 to fd00::201:1:1:1
+84151856 node-1 [INFO: App       ] Received request 'hello 6' from fd00::205:5:5:5
+84151856 node-1 [INFO: App       ] Sending response.
+84235112 node-5 [INFO: App       ] Received response 'hello 6' from fd00::201:1:1:1
+85052000 node-3 [INFO: App       ] Sending request 6 to fd00::201:1:1:1
+85088568 node-1 [INFO: App       ] Received request 'hello 6' from fd00::203:3:3:3
+85088568 node-1 [INFO: App       ] Sending response.
+85099568 node-3 [INFO: App       ] Received response 'hello 6' from fd00::201:1:1:1
+86583000 node-4 [INFO: App       ] Sending request 5 to fd00::201:1:1:1
+86636000 node-6 [INFO: App       ] Sending request 3 to fd00::201:1:1:1
+86636856 node-1 [INFO: App       ] Received request 'hello 5' from fd00::204:4:4:4
+86636856 node-1 [INFO: App       ] Sending response.
+86684112 node-4 [INFO: App       ] Received response 'hello 5' from fd00::201:1:1:1
+86729856 node-1 [INFO: App       ] Received request 'hello 3' from fd00::206:6:6:6
+86729856 node-1 [INFO: App       ] Sending response.
+86826368 node-6 [INFO: App       ] Received response 'hello 3' from fd00::201:1:1:1
+94151000 node-2 [INFO: App       ] Sending request 7 to fd00::201:1:1:1
+94169568 node-1 [INFO: App       ] Received request 'hello 7' from fd00::202:2:2:2
+94169568 node-1 [INFO: App       ] Sending response.
+94181568 node-2 [INFO: App       ] Received response 'hello 7' from fd00::201:1:1:1
+94353000 node-5 [INFO: App       ] Sending request 7 to fd00::201:1:1:1
+94379856 node-1 [INFO: App       ] Received request 'hello 7' from fd00::205:5:5:5
+94379856 node-1 [INFO: App       ] Sending response.
+94446112 node-5 [INFO: App       ] Received response 'hello 7' from fd00::201:1:1:1
+95757000 node-3 [INFO: App       ] Sending request 7 to fd00::201:1:1:1
+95767568 node-1 [INFO: App       ] Received request 'hello 7' from fd00::203:3:3:3
+95767568 node-1 [INFO: App       ] Sending response.
+95773136 node-3 [INFO: App       ] Received response 'hello 7' from fd00::201:1:1:1
+96737000 node-4 [INFO: App       ] Sending request 6 to fd00::201:1:1:1
+96751856 node-1 [INFO: App       ] Received request 'hello 6' from fd00::204:4:4:4
+96751856 node-1 [INFO: App       ] Sending response.
+96810112 node-4 [INFO: App       ] Received response 'hello 6' from fd00::201:1:1:1
+97567000 node-6 [INFO: App       ] Sending request 4 to fd00::201:1:1:1
+97667856 node-1 [INFO: App       ] Received request 'hello 4' from fd00::206:6:6:6
+97667856 node-1 [INFO: App       ] Sending response.
+97761368 node-6 [INFO: App       ] Received response 'hello 4' from fd00::201:1:1:1
+104417000 node-2 [INFO: App       ] Sending request 8 to fd00::201:1:1:1
+104462568 node-1 [INFO: App       ] Received request 'hello 8' from fd00::202:2:2:2
+104462568 node-1 [INFO: App       ] Sending response.
+104488568 node-2 [INFO: App       ] Received response 'hello 8' from fd00::201:1:1:1
+104517000 node-5 [INFO: App       ] Sending request 8 to fd00::201:1:1:1
+104546856 node-1 [INFO: App       ] Received request 'hello 8' from fd00::205:5:5:5
+104546856 node-1 [INFO: App       ] Sending response.
+104596112 node-5 [INFO: App       ] Received response 'hello 8' from fd00::201:1:1:1
+105799000 node-4 [INFO: App       ] Sending request 7 to fd00::201:1:1:1
+105871856 node-1 [INFO: App       ] Received request 'hello 7' from fd00::204:4:4:4
+105871856 node-1 [INFO: App       ] Sending response.
+105939112 node-4 [INFO: App       ] Received response 'hello 7' from fd00::201:1:1:1
+106118000 node-3 [INFO: App       ] Sending request 8 to fd00::201:1:1:1
+106145568 node-1 [INFO: App       ] Received request 'hello 8' from fd00::203:3:3:3
+106145568 node-1 [INFO: App       ] Sending response.
+106151568 node-3 [INFO: App       ] Received response 'hello 8' from fd00::201:1:1:1
+107239000 node-6 [INFO: App       ] Sending request 5 to fd00::201:1:1:1
+107315856 node-1 [INFO: App       ] Received request 'hello 5' from fd00::206:6:6:6
+107315856 node-1 [INFO: App       ] Sending response.
+107363368 node-6 [INFO: App       ] Received response 'hello 5' from fd00::201:1:1:1
+114713000 node-5 [INFO: App       ] Sending request 9 to fd00::201:1:1:1
+114758856 node-1 [INFO: App       ] Received request 'hello 9' from fd00::205:5:5:5
+114758856 node-1 [INFO: App       ] Sending response.
+114843112 node-5 [INFO: App       ] Received response 'hello 9' from fd00::201:1:1:1
+115225000 node-2 [INFO: App       ] Sending request 9 to fd00::201:1:1:1
+115248568 node-1 [INFO: App       ] Received request 'hello 9' from fd00::202:2:2:2
+115248568 node-1 [INFO: App       ] Sending response.
+115285568 node-2 [INFO: App       ] Received response 'hello 9' from fd00::201:1:1:1
+115316000 node-4 [INFO: App       ] Sending request 8 to fd00::201:1:1:1
+115369856 node-1 [INFO: App       ] Received request 'hello 8' from fd00::204:4:4:4
+115369856 node-1 [INFO: App       ] Sending response.
+115431112 node-4 [INFO: App       ] Received response 'hello 8' from fd00::201:1:1:1
+116469000 node-3 [INFO: App       ] Sending request 9 to fd00::201:1:1:1
+116479568 node-1 [INFO: App       ] Received request 'hello 9' from fd00::203:3:3:3
+116479568 node-1 [INFO: App       ] Sending response.
+116495568 node-3 [INFO: App       ] Received response 'hello 9' from fd00::201:1:1:1
+118044000 node-6 [INFO: App       ] Sending request 6 to fd00::201:1:1:1
+118089856 node-1 [INFO: App       ] Received request 'hello 6' from fd00::206:6:6:6
+118089856 node-1 [INFO: App       ] Sending response.
+118140368 node-6 [INFO: App       ] Received response 'hello 6' from fd00::201:1:1:1
+124316000 node-2 [INFO: App       ] Tx/Rx/MissedTx: 10/10/0
+124316000 node-2 [INFO: App       ] Sending request 10 to fd00::201:1:1:1
+124350600 node-1 [INFO: App       ] Received request 'hello 10' from fd00::202:2:2:2
+124350600 node-1 [INFO: App       ] Sending response.
+124375600 node-2 [INFO: App       ] Received response 'hello 10' from fd00::201:1:1:1
+125237000 node-5 [INFO: App       ] Tx/Rx/MissedTx: 10/10/0
+125237000 node-5 [INFO: App       ] Sending request 10 to fd00::201:1:1:1
+125256888 node-1 [INFO: App       ] Received request 'hello 10' from fd00::205:5:5:5
+125256888 node-1 [INFO: App       ] Sending response.
+125272144 node-5 [INFO: App       ] Received response 'hello 10' from fd00::201:1:1:1
+125469000 node-4 [INFO: App       ] Sending request 9 to fd00::201:1:1:1
+125481680 node-1 [INFO: App       ] Received request 'hello 9' from fd00::204:4:4:4
+125481680 node-1 [INFO: App       ] Sending response.
+125503112 node-4 [INFO: App       ] Received response 'hello 9' from fd00::201:1:1:1
+126789000 node-3 [INFO: App       ] Tx/Rx/MissedTx: 10/10/0
+126789000 node-3 [INFO: App       ] Sending request 10 to fd00::201:1:1:1
+126824600 node-1 [INFO: App       ] Received request 'hello 10' from fd00::203:3:3:3
+126824600 node-1 [INFO: App       ] Sending response.
+126830200 node-3 [INFO: App       ] Received response 'hello 10' from fd00::201:1:1:1
+127446000 node-6 [INFO: App       ] Sending request 7 to fd00::201:1:1:1
+127484856 node-1 [INFO: App       ] Received request 'hello 7' from fd00::206:6:6:6
+127484856 node-1 [INFO: App       ] Sending response.
+127574368 node-6 [INFO: App       ] Received response 'hello 7' from fd00::201:1:1:1
+134882000 node-2 [INFO: App       ] Sending request 11 to fd00::201:1:1:1
+134926600 node-1 [INFO: App       ] Received request 'hello 11' from fd00::202:2:2:2
+134926600 node-1 [INFO: App       ] Sending response.
+134955600 node-2 [INFO: App       ] Received response 'hello 11' from fd00::201:1:1:1
+135274000 node-4 [INFO: App       ] Tx/Rx/MissedTx: 10/10/0
+135274000 node-4 [INFO: App       ] Sending request 10 to fd00::201:1:1:1
+135314888 node-1 [INFO: App       ] Received request 'hello 10' from fd00::204:4:4:4
+135314888 node-1 [INFO: App       ] Sending response.
+135372144 node-4 [INFO: App       ] Received response 'hello 10' from fd00::201:1:1:1
+135541000 node-5 [INFO: App       ] Sending request 11 to fd00::201:1:1:1
+135598888 node-1 [INFO: App       ] Received request 'hello 11' from fd00::205:5:5:5
+135598888 node-1 [INFO: App       ] Sending response.
+135652144 node-5 [INFO: App       ] Received response 'hello 11' from fd00::201:1:1:1
+136475000 node-3 [INFO: App       ] Sending request 11 to fd00::201:1:1:1
+136480600 node-1 [INFO: App       ] Received request 'hello 11' from fd00::203:3:3:3
+136480600 node-1 [INFO: App       ] Sending response.
+136495600 node-3 [INFO: App       ] Received response 'hello 11' from fd00::201:1:1:1
+137828000 node-6 [INFO: App       ] Sending request 8 to fd00::201:1:1:1
+137900856 node-1 [INFO: App       ] Received request 'hello 8' from fd00::206:6:6:6
+137900856 node-1 [INFO: App       ] Sending response.
+137958368 node-6 [INFO: App       ] Received response 'hello 8' from fd00::201:1:1:1
+145032000 node-5 [INFO: App       ] Sending request 12 to fd00::201:1:1:1
+145053888 node-1 [INFO: App       ] Received request 'hello 12' from fd00::205:5:5:5
+145053888 node-1 [INFO: App       ] Sending response.
+145111144 node-5 [INFO: App       ] Received response 'hello 12' from fd00::201:1:1:1
+145376000 node-2 [INFO: App       ] Sending request 12 to fd00::201:1:1:1
+145384600 node-1 [INFO: App       ] Received request 'hello 12' from fd00::202:2:2:2
+145384600 node-1 [INFO: App       ] Sending response.
+145420600 node-2 [INFO: App       ] Received response 'hello 12' from fd00::201:1:1:1
+146217000 node-4 [INFO: App       ] Sending request 11 to fd00::201:1:1:1
+146230888 node-1 [INFO: App       ] Received request 'hello 11' from fd00::204:4:4:4
+146230888 node-1 [INFO: App       ] Sending response.
+146261144 node-4 [INFO: App       ] Received response 'hello 11' from fd00::201:1:1:1
+146360000 node-3 [INFO: App       ] Sending request 12 to fd00::201:1:1:1
+146372600 node-1 [INFO: App       ] Received request 'hello 12' from fd00::203:3:3:3
+146372600 node-1 [INFO: App       ] Sending response.
+146396600 node-3 [INFO: App       ] Received response 'hello 12' from fd00::201:1:1:1
+148698000 node-6 [INFO: App       ] Sending request 9 to fd00::201:1:1:1
+148813856 node-1 [INFO: App       ] Received request 'hello 9' from fd00::206:6:6:6
+148813856 node-1 [INFO: App       ] Sending response.
+148882368 node-6 [INFO: App       ] Received response 'hello 9' from fd00::201:1:1:1
+155493000 node-2 [INFO: App       ] Sending request 13 to fd00::201:1:1:1
+155534600 node-1 [INFO: App       ] Received request 'hello 13' from fd00::202:2:2:2
+155534600 node-1 [INFO: App       ] Sending response.
+155549600 node-2 [INFO: App       ] Received response 'hello 13' from fd00::201:1:1:1
+155661000 node-5 [INFO: App       ] Sending request 13 to fd00::201:1:1:1
+155696888 node-1 [INFO: App       ] Received request 'hello 13' from fd00::205:5:5:5
+155696888 node-1 [INFO: App       ] Sending response.
+155752144 node-5 [INFO: App       ] Received response 'hello 13' from fd00::201:1:1:1
+156605000 node-3 [INFO: App       ] Sending request 13 to fd00::201:1:1:1
+156649600 node-1 [INFO: App       ] Received request 'hello 13' from fd00::203:3:3:3
+156649600 node-1 [INFO: App       ] Sending response.
+156677600 node-3 [INFO: App       ] Received response 'hello 13' from fd00::201:1:1:1
+156798000 node-4 [INFO: App       ] Sending request 12 to fd00::201:1:1:1
+156862888 node-1 [INFO: App       ] Received request 'hello 12' from fd00::204:4:4:4
+156862888 node-1 [INFO: App       ] Sending response.
+156935144 node-4 [INFO: App       ] Received response 'hello 12' from fd00::201:1:1:1
+158663000 node-6 [INFO: App       ] Tx/Rx/MissedTx: 10/10/0
+158663000 node-6 [INFO: App       ] Sending request 10 to fd00::201:1:1:1
+158743888 node-1 [INFO: App       ] Received request 'hello 10' from fd00::206:6:6:6
+158743888 node-1 [INFO: App       ] Sending response.
+158833400 node-6 [INFO: App       ] Received response 'hello 10' from fd00::201:1:1:1
+166020000 node-4 [INFO: App       ] Sending request 13 to fd00::201:1:1:1
+166077888 node-1 [INFO: App       ] Received request 'hello 13' from fd00::204:4:4:4
+166077888 node-1 [INFO: App       ] Sending response.
+166143144 node-4 [INFO: App       ] Received response 'hello 13' from fd00::201:1:1:1
+166455000 node-2 [INFO: App       ] Sending request 14 to fd00::201:1:1:1
+166462600 node-1 [INFO: App       ] Received request 'hello 14' from fd00::202:2:2:2
+166462600 node-1 [INFO: App       ] Sending response.
+166477600 node-2 [INFO: App       ] Received response 'hello 14' from fd00::201:1:1:1
+166653000 node-5 [INFO: App       ] Sending request 14 to fd00::201:1:1:1
+166689888 node-1 [INFO: App       ] Received request 'hello 14' from fd00::205:5:5:5
+166689888 node-1 [INFO: App       ] Sending response.
+166752144 node-5 [INFO: App       ] Received response 'hello 14' from fd00::201:1:1:1
+167006000 node-3 [INFO: App       ] Sending request 14 to fd00::201:1:1:1
+167016600 node-1 [INFO: App       ] Received request 'hello 14' from fd00::203:3:3:3
+167016600 node-1 [INFO: App       ] Sending response.
+167054600 node-3 [INFO: App       ] Received response 'hello 14' from fd00::201:1:1:1
+169499000 node-6 [INFO: App       ] Sending request 11 to fd00::201:1:1:1
+169598888 node-1 [INFO: App       ] Received request 'hello 11' from fd00::206:6:6:6
+169598888 node-1 [INFO: App       ] Sending response.
+169710400 node-6 [INFO: App       ] Received response 'hello 11' from fd00::201:1:1:1
+175919000 node-2 [INFO: App       ] Sending request 15 to fd00::201:1:1:1
+175922000 node-4 [INFO: App       ] Sending request 14 to fd00::201:1:1:1
+175943888 node-1 [INFO: App       ] Received request 'hello 14' from fd00::204:4:4:4
+175943888 node-1 [INFO: App       ] Sending response.
+175956600 node-1 [INFO: App       ] Received request 'hello 15' from fd00::202:2:2:2
+175956600 node-1 [INFO: App       ] Sending response.
+175985600 node-2 [INFO: App       ] Received response 'hello 15' from fd00::201:1:1:1
+175994144 node-4 [INFO: App       ] Received response 'hello 14' from fd00::201:1:1:1
+176652000 node-5 [INFO: App       ] Sending request 15 to fd00::201:1:1:1
+176702888 node-1 [INFO: App       ] Received request 'hello 15' from fd00::205:5:5:5
+176702888 node-1 [INFO: App       ] Sending response.
+176742144 node-5 [INFO: App       ] Received response 'hello 15' from fd00::201:1:1:1
+177220000 node-3 [INFO: App       ] Sending request 15 to fd00::201:1:1:1
+177226600 node-1 [INFO: App       ] Received request 'hello 15' from fd00::203:3:3:3
+177226600 node-1 [INFO: App       ] Sending response.
+177232600 node-3 [INFO: App       ] Received response 'hello 15' from fd00::201:1:1:1
+179467000 node-6 [INFO: App       ] Sending request 12 to fd00::201:1:1:1
+179566888 node-1 [INFO: App       ] Received request 'hello 12' from fd00::206:6:6:6
+179566888 node-1 [INFO: App       ] Sending response.
+179617400 node-6 [INFO: App       ] Received response 'hello 12' from fd00::201:1:1:1
+TEST OK
+Test ended at simulation time: 180000000
