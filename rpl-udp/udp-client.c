@@ -3,6 +3,7 @@
 #include "random.h"
 #include "net/netstack.h"
 #include "net/ipv6/simple-udp.h"
+#include "sys/battery-sim.h"
 #include <stdint.h>
 #include <inttypes.h>
 
@@ -51,6 +52,9 @@ PROCESS_THREAD(udp_client_process, ev, data)
   static uint32_t missed_tx_count;
 
   PROCESS_BEGIN();
+
+  /* Simulated battery + death (same for every OF under test) */
+  battery_sim_start(false);
 
   /* Initialize UDP connection */
   simple_udp_register(&udp_conn, UDP_CLIENT_PORT, NULL,

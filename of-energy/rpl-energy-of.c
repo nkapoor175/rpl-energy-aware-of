@@ -22,17 +22,11 @@
  * Each remaining TODO is left at the point it will hook in, so the file's
  * structure won't need to change when they're added.
  *
- * Residual energy comes from Contiki-NG's Energest module (see
- * rpl_energy_of_get_own_energy_percent): cumulative CPU/LPM/radio on-time
- * is converted to consumed energy using an assumed current draw per state
- * (RPL_ENERGY_OF_*_MA below, Tmote Sky-class figures) and an assumed
- * starting battery capacity (RPL_ENERGY_OF_CONF_BATTERY_CAPACITY_MJ). Both
- * are simulation-design choices, not code correctness ones -- the default
- * capacity is picked to visibly deplete over a Cooja-scale run (minutes),
- * not to model a real battery's lifetime. Override per-experiment via
- * project-conf.h once the team agrees on evaluation timescales.
- * Requires ENERGEST_CONF_ON 1 (off by default on cooja/native), set in
- * project-conf.h.
+ * Residual energy comes from the OF-independent battery-sim module (see
+ * battery-sim/battery-sim.h): Energest on-time -> modeled consumed energy ->
+ * 0..255 remaining. The same module also kills nodes whose battery is empty,
+ * identically for OF0, MRHOF and this OF, so lifetime comparisons are fair.
+ * The application must call battery_sim_start() (udp-client / udp-server do).
  *
  * Normalization bounds below are still fixed constants rather than
  * dynamically computed from the current neighbor set. Energy-gated
@@ -58,11 +52,8 @@
 #include "net/routing/rpl-lite/rpl-energy-of.h"
 #include "net/nbr-table.h"
 #include "net/link-stats.h"
-#include "net/netstack.h"
 #include "sys/energest.h"
-#include "sys/node-id.h"
-#include <stdbool.h>
-#include <stdio.h>
+#include "sys/battery-sim.h"
 
 /* The RPL Lite neighbor table, declared in rpl-neighbor.c. Needed to
  * iterate all currently visible neighbors for the energy-gated filtering
@@ -153,184 +144,10 @@ NBR_TABLE_DECLARE(rpl_neighbors);
 #define ENERGY_GATE_MIN_NEIGHBORS 5
 
 /*---------------------------------------------------------------------------*/
-/* Not under "#if RPL_WITH_MC": the battery model also drives node death
- * (see the battery monitor below), which must work with MC disabled too. */
-/* Assumed current draw per Energest state, in mA (Tmote Sky-class figures,
- * commonly used in RPL energy literature). Override via project-conf.h if
- * modeling a different platform. */
-#ifndef RPL_ENERGY_OF_CONF_CPU_MA
-#define RPL_ENERGY_OF_CPU_MA 1.8
-#else
-#define RPL_ENERGY_OF_CPU_MA RPL_ENERGY_OF_CONF_CPU_MA
-#endif
-
-#ifndef RPL_ENERGY_OF_CONF_LPM_MA
-#define RPL_ENERGY_OF_LPM_MA 0.0545
-#else
-#define RPL_ENERGY_OF_LPM_MA RPL_ENERGY_OF_CONF_LPM_MA
-#endif
-
-#ifndef RPL_ENERGY_OF_CONF_TRANSMIT_MA
-#define RPL_ENERGY_OF_TRANSMIT_MA 17.7
-#else
-#define RPL_ENERGY_OF_TRANSMIT_MA RPL_ENERGY_OF_CONF_TRANSMIT_MA
-#endif
-
-#ifndef RPL_ENERGY_OF_CONF_LISTEN_MA
-#define RPL_ENERGY_OF_LISTEN_MA 20.0
-#else
-#define RPL_ENERGY_OF_LISTEN_MA RPL_ENERGY_OF_CONF_LISTEN_MA
-#endif
-
-#define RPL_ENERGY_OF_SUPPLY_VOLTAGE 3.0
-
-/* Assumed starting battery capacity, in millijoules. Set it per experiment
- * from project-conf.h:
- *   #define RPL_ENERGY_OF_CONF_BATTERY_CAPACITY_MJ 60000.0
- * It is a simulation knob, NOT a real battery's capacity (two AA cells are
- * ~20,000,000 mJ, which would never drain inside a Cooja run).
- *
- * Choosing a value for a target node lifetime T (seconds) with the radio
- * always on (Contiki-NG's default csma MAC never duty-cycles the radio):
- *   power  = V * (I_listen + I_cpu) = 3.0 V * (20.0 + 1.8) mA = 65.4 mW
- *   capacity_mJ = T * 65.4        (mW * s = mJ)
- * so 10 min -> ~39,000   15 min -> ~59,000   20 min -> ~78,000.
- * Transmitting draws slightly LESS than listening in this model (17.7 vs
- * 20.0 mA), so traffic barely moves the lifetime; verify the real number
- * for your platform from the NODE_DEAD lines of a first run and rescale.
- * Default below (500,000 mJ, ~2 h) is deliberately too large to trigger
- * death in short smoke tests. */
-#ifndef RPL_ENERGY_OF_CONF_BATTERY_CAPACITY_MJ
-#define RPL_ENERGY_OF_BATTERY_CAPACITY_MJ 500000.0
-#else
-#define RPL_ENERGY_OF_BATTERY_CAPACITY_MJ RPL_ENERGY_OF_CONF_BATTERY_CAPACITY_MJ
-#endif
-
-/* Optional per-node capacity spread (percent, default 0 = every node gets
- * exactly the capacity above). With the radio always on, every node drains
- * at nearly the same rate, so identical batteries make all nodes die within
- * about a second of each other and there is no surviving network to re-form
- * around the dead ones. Setting e.g.
- *   #define RPL_ENERGY_OF_CONF_CAPACITY_SPREAD_PCT 30
- * gives node N a deterministic capacity factor in [0.70, 1.30] derived from
- * its node id, so nodes die in a staggered, reproducible order. Compare
- * runs only with the same spread value. */
-#ifndef RPL_ENERGY_OF_CONF_CAPACITY_SPREAD_PCT
-#define RPL_ENERGY_OF_CAPACITY_SPREAD_PCT 0
-#else
-#define RPL_ENERGY_OF_CAPACITY_SPREAD_PCT RPL_ENERGY_OF_CONF_CAPACITY_SPREAD_PCT
-#endif
-
-static double
-node_battery_capacity_mj(void)
-{
-  /* node_id * 7 mod 11 maps consecutive ids to well-separated values 0..10 */
-  double position = ((double)((node_id * 7) % 11) - 5.0) / 5.0; /* -1 .. +1 */
-  return RPL_ENERGY_OF_BATTERY_CAPACITY_MJ *
-    (1.0 + (RPL_ENERGY_OF_CAPACITY_SPREAD_PCT / 100.0) * position);
-}
-
-static uint8_t
-rpl_energy_of_get_own_energy_percent(void)
-{
-  double consumed_mj;
-  double remaining_fraction;
-
-  energest_flush();
-
-  consumed_mj = RPL_ENERGY_OF_SUPPLY_VOLTAGE * (
-    RPL_ENERGY_OF_CPU_MA * ((double)energest_type_time(ENERGEST_TYPE_CPU) / ENERGEST_SECOND) +
-    RPL_ENERGY_OF_LPM_MA * ((double)energest_type_time(ENERGEST_TYPE_LPM) / ENERGEST_SECOND) +
-    RPL_ENERGY_OF_TRANSMIT_MA * ((double)energest_type_time(ENERGEST_TYPE_TRANSMIT) / ENERGEST_SECOND) +
-    RPL_ENERGY_OF_LISTEN_MA * ((double)energest_type_time(ENERGEST_TYPE_LISTEN) / ENERGEST_SECOND)
-  );
-
-  remaining_fraction = 1.0 - (consumed_mj / node_battery_capacity_mj());
-  if(remaining_fraction < 0.0) {
-    remaining_fraction = 0.0;
-  } else if(remaining_fraction > 1.0) {
-    remaining_fraction = 1.0;
-  }
-
-  return (uint8_t)(remaining_fraction * ENERGY_MAX);
-}
-/*---------------------------------------------------------------------------*/
-/* Node death. A once-per-second monitor process checks the battery; when
- * rpl_energy_of_get_own_energy_percent() reaches 0 the node is killed:
- * "NODE_DEAD id=<id> time=<seconds>" is printed exactly once, the radio is
- * switched off, and every process (application, tcpip, etimer/ctimer, ...)
- * is exited. Killing the processes matters as much as the radio: Cooja's
- * radio_send() temporarily powers the radio back on to transmit, so a node
- * with only its radio off would still send DIOs and application packets
- * from timers. With the timers and processes gone nothing can trigger a
- * send, and with the radio off nothing is received (so nothing is
- * forwarded). Neighbors notice through missed DIOs / failing link
- * statistics and re-select parents.
- *
- * The root is the mains-powered sink: it never dies (and advertises a full
- * battery, see update_metric_container) unless
- * RPL_ENERGY_OF_CONF_ROOT_CAN_DIE is set to 1. */
-#ifdef RPL_ENERGY_OF_CONF_ROOT_CAN_DIE
-#define RPL_ENERGY_OF_ROOT_CAN_DIE RPL_ENERGY_OF_CONF_ROOT_CAN_DIE
-#else
-#define RPL_ENERGY_OF_ROOT_CAN_DIE 0
-#endif
-
-#define BATTERY_CHECK_INTERVAL CLOCK_SECOND
-
-static bool battery_monitor_started = false;
-
-PROCESS(rpl_energy_of_battery_process, "energy OF battery monitor");
-
-static void
-kill_node(void)
-{
-  struct process *p;
-  struct process *next;
-
-  printf("NODE_DEAD id=%u time=%lu\n", (unsigned)node_id,
-         (unsigned long)clock_seconds());
-
-  NETSTACK_RADIO.off();
-
-  for(p = PROCESS_LIST(); p != NULL; p = next) {
-    next = p->next; /* process_exit() unlinks p */
-    if(p != &rpl_energy_of_battery_process) {
-      process_exit(p);
-    }
-  }
-}
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(rpl_energy_of_battery_process, ev, data)
-{
-  static struct etimer timer;
-
-  PROCESS_BEGIN();
-
-  etimer_set(&timer, BATTERY_CHECK_INTERVAL);
-  while(1) {
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
-    if(rpl_energy_of_get_own_energy_percent() == ENERGY_MIN
-       && (RPL_ENERGY_OF_ROOT_CAN_DIE || !rpl_dag_root_is_root())) {
-      kill_node();
-      PROCESS_EXIT(); /* dead nodes stay dead; the thread never runs again */
-    }
-    etimer_reset(&timer);
-  }
-
-  PROCESS_END();
-}
-/*---------------------------------------------------------------------------*/
-/* Called from reset() and update_metric_container(), i.e. as soon as the OF
- * is in use on this node (root and non-root); idempotent. */
-static void
-ensure_battery_monitor_started(void)
-{
-  if(!battery_monitor_started) {
-    battery_monitor_started = true;
-    process_start(&rpl_energy_of_battery_process, NULL);
-  }
-}
+/* The battery model (current draw, capacity, node death) is NOT part of this
+ * OF: it lives in the OF-independent battery-sim module so that OF0, MRHOF
+ * and this OF all run under the identical battery. This OF only READS the
+ * value via battery_sim_energy_percent(). */
 /*---------------------------------------------------------------------------*/
 static uint8_t
 nbr_energy_percent(rpl_nbr_t *nbr)
@@ -380,7 +197,6 @@ static void
 reset(void)
 {
   LOG_INFO("reset energy-aware OF\n");
-  ensure_battery_monitor_started();
 }
 /*---------------------------------------------------------------------------*/
 static uint16_t
@@ -570,15 +386,12 @@ best_parent(rpl_nbr_t *nbr1, rpl_nbr_t *nbr2)
 static void
 update_metric_container(void)
 {
-  ensure_battery_monitor_started();
   curr_instance.mc.type = RPL_DAG_MC_NONE;
 }
 #else /* RPL_WITH_MC */
 static void
 update_metric_container(void)
 {
-  ensure_battery_monitor_started();
-
   if(!curr_instance.used) {
     LOG_WARN("cannot update the metric container when not joined\n");
     return;
@@ -593,14 +406,14 @@ update_metric_container(void)
   curr_instance.mc.aggr = RPL_DAG_MC_AGGR_ADDITIVE;
   curr_instance.mc.prec = 0;
   curr_instance.mc.length = sizeof(curr_instance.mc.obj.energy);
-  if(!RPL_ENERGY_OF_ROOT_CAN_DIE && rpl_dag_root_is_root()) {
+  if(battery_sim_is_immortal()) {
     /* Mains-powered sink: always advertise a full battery, so neighbors
-     * neither score it down nor gate it out as its modeled battery drains. */
+     * neither score it down nor gate it out. */
     curr_instance.mc.obj.energy.flags = RPL_DAG_MC_ENERGY_TYPE_MAINS << RPL_DAG_MC_ENERGY_TYPE;
     curr_instance.mc.obj.energy.energy_est = ENERGY_MAX;
   } else {
     curr_instance.mc.obj.energy.flags = RPL_DAG_MC_ENERGY_TYPE_BATTERY << RPL_DAG_MC_ENERGY_TYPE;
-    curr_instance.mc.obj.energy.energy_est = rpl_energy_of_get_own_energy_percent();
+    curr_instance.mc.obj.energy.energy_est = battery_sim_energy_percent();
   }
 
   /* TODO (local adaptive weighting, checklist item, Ananya's DIO work):
