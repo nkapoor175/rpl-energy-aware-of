@@ -29,4 +29,13 @@
  * instead of always returning 0. */
 #define ENERGEST_CONF_ON 1
 
+/* PER-EXPERIMENT KNOB: modeled battery capacity in millijoules. A node dies
+ * (prints "NODE_DEAD id=<id> time=<s>", radio + all processes stopped) when
+ * it is used up. With the radio always on a node burns ~65.4 mW
+ * (3 V * (20 mA listen + 1.8 mA CPU)), so lifetime_s ~= capacity_mJ / 65.4:
+ *   39000 -> ~10 min   60000 -> ~15 min   78000 -> ~20 min
+ * See the comment above RPL_ENERGY_OF_BATTERY_CAPACITY_MJ in
+ * of-energy/rpl-energy-of.c. The OF's built-in default is 500000 (~2 h). */
+#define RPL_ENERGY_OF_CONF_BATTERY_CAPACITY_MJ 60000.0
+
 #endif /* PROJECT_CONF_H_ */
