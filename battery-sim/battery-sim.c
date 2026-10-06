@@ -127,6 +127,16 @@
 #define BATTERY_SIM_ROOT_CAN_DIE BATTERY_SIM_CONF_ROOT_CAN_DIE
 #endif
 
+/* Every BATTERY_SIM_CONF_REPORT_INTERVAL_S seconds each non-sink node prints
+ *   ENERGY id=<id> time=<s> consumed_uj=<microjoules> capacity_uj=<microjoules> remaining=<0..255>
+ * for the log -> CSV parser (energy consumed / remaining per node over time).
+ * 0 (default) = no periodic report. */
+#ifndef BATTERY_SIM_CONF_REPORT_INTERVAL_S
+#define BATTERY_SIM_REPORT_INTERVAL_S 0
+#else
+#define BATTERY_SIM_REPORT_INTERVAL_S BATTERY_SIM_CONF_REPORT_INTERVAL_S
+#endif
+
 #define BATTERY_CHECK_INTERVAL CLOCK_SECOND
 
 static bool started = false;
@@ -143,21 +153,14 @@ node_capacity_mj(void)
     (1.0 + (BATTERY_SIM_CAPACITY_SPREAD_PCT / 100.0) * position);
 }
 /*---------------------------------------------------------------------------*/
-uint8_t
-battery_sim_energy_percent(void)
+static double
+consumed_mj_now(void)
 {
-  double consumed_mj;
-  double remaining_fraction;
-
-  if(immortal) {
-    return 255;
-  }
-
   energest_flush();
 
   /* mA * s * V = mJ. CPU current is applied to the whole cpu+lpm time (the
    * duty-cycle assumption replaces the measured CPU/LPM split). */
-  consumed_mj = BATTERY_SIM_SUPPLY_VOLTAGE * (
+  return BATTERY_SIM_SUPPLY_VOLTAGE * (
     BATTERY_SIM_CPU_EFF_MA *
       ((double)(energest_type_time(ENERGEST_TYPE_CPU) +
                 energest_type_time(ENERGEST_TYPE_LPM)) / ENERGEST_SECOND) +
@@ -166,8 +169,18 @@ battery_sim_energy_percent(void)
     BATTERY_SIM_TRANSMIT_MA *
       ((double)energest_type_time(ENERGEST_TYPE_TRANSMIT) / ENERGEST_SECOND)
   );
+}
+/*---------------------------------------------------------------------------*/
+uint8_t
+battery_sim_energy_percent(void)
+{
+  double remaining_fraction;
 
-  remaining_fraction = 1.0 - (consumed_mj / node_capacity_mj());
+  if(immortal) {
+    return 255;
+  }
+
+  remaining_fraction = 1.0 - (consumed_mj_now() / node_capacity_mj());
   if(remaining_fraction < 0.0) {
     remaining_fraction = 0.0;
   } else if(remaining_fraction > 1.0) {
@@ -205,15 +218,25 @@ kill_node(void)
 PROCESS_THREAD(battery_sim_process, ev, data)
 {
   static struct etimer timer;
+  static unsigned long ticks = 0;
 
   PROCESS_BEGIN();
 
   etimer_set(&timer, BATTERY_CHECK_INTERVAL);
   while(1) {
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
+    ticks++;
     if(!immortal && battery_sim_energy_percent() == 0) {
       kill_node();
       PROCESS_EXIT(); /* dead nodes stay dead; the thread never runs again */
+    }
+    if(!immortal && BATTERY_SIM_REPORT_INTERVAL_S > 0 &&
+       ticks % BATTERY_SIM_REPORT_INTERVAL_S == 0) {
+      printf("ENERGY id=%u time=%lu consumed_uj=%lu capacity_uj=%lu remaining=%u\n",
+             (unsigned)node_id, (unsigned long)clock_seconds(),
+             (unsigned long)(consumed_mj_now() * 1000.0),
+             (unsigned long)(node_capacity_mj() * 1000.0),
+             (unsigned)battery_sim_energy_percent());
     }
     etimer_reset(&timer);
   }

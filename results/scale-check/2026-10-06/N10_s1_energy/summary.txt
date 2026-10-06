@@ -1,0 +1,4 @@
+nodes=10 seed=1 of=0 (energy) max_seconds=120000
+LIFETIME nodes=10 clients=9 dead=9 cutoff=0 FND_s=68245 HND_s=69660 LND_s=70973
+Speedup: 798.8223687912929
+wall_seconds=93

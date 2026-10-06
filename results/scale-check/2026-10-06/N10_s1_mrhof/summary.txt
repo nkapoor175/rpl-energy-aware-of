@@ -1,0 +1,4 @@
+nodes=10 seed=1 of=1 (mrhof) max_seconds=120000
+LIFETIME nodes=10 clients=9 dead=9 cutoff=0 FND_s=66994 HND_s=70525 LND_s=70975
+Speedup: 854.5538618987418
+wall_seconds=95

@@ -1,0 +1,7 @@
+
+# Raw per-run Cooja logs are huge (21 MB for 10 nodes, ~100x that for the full
+# 45-run set). Scenarios (.csc, deterministic from nodes+seed) and summary.txt
+# are tracked; regenerate a log by rerunning experiments/run_lifetime.sh.
+results/**/cooja.log
+results/**/run.out
+results/**/build.log

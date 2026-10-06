@@ -52,4 +52,8 @@
  * time (nothing dies in a short run). */
 #define BATTERY_SIM_CONF_CAPACITY_MJ 60000.0
 
+/* Each client prints "ENERGY id=.. time=.. consumed_uj=.. capacity_uj=..
+ * remaining=.." every 60 s of simulated time, for the log -> CSV parser. */
+#define BATTERY_SIM_CONF_REPORT_INTERVAL_S 60
+
 #endif /* PROJECT_CONF_H_ */
