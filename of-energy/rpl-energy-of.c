@@ -334,7 +334,10 @@ nbr_is_acceptable_parent(rpl_nbr_t *nbr)
    * energy, before any weighted scoring happens. This is a two-stage
    * design (filter, then score), not a soft weight adjustment -- a
    * candidate excluded here never reaches weighted_link_cost(). */
-  if(nbr_energy_percent(nbr) < compute_energy_gate_threshold()) {
+  uint8_t gate_threshold = compute_energy_gate_threshold();
+  if(nbr_energy_percent(nbr) < gate_threshold) {
+    LOG_DBG("energy gate: excluded neighbor, energy %u < threshold %u\n",
+            (unsigned)nbr_energy_percent(nbr), (unsigned)gate_threshold);
     return 0;
   }
 #endif /* RPL_ENERGY_OF_ENABLE_GATING */
