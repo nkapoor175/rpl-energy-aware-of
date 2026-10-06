@@ -35,6 +35,10 @@ one-line patch:
 4. Copy `rpl-udp/{Makefile,project-conf.h,udp-client.c,udp-server.c}` into
    `~/contiki-ng/examples/rpl-udp/`.
 
+   The energy model (duty cycle D, capacity) is set in `project-conf.h`
+   (`BATTERY_SIM_CONF_DUTY_CYCLE`, `BATTERY_SIM_CONF_CAPACITY_MJ`) and is
+   identical for every OF; see CLAUDE.md for the frozen values.
+
 5. Pick the OF per build (same topology, traffic and battery for all):
    ```
    rm -rf build && make TARGET=cooja EXPERIMENT_OF=0   # our energy OF (default)

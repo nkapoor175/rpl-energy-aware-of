@@ -38,13 +38,18 @@
  * battery-sim to read real CPU/radio on-time instead of always 0. */
 #define ENERGEST_CONF_ON 1
 
-/* PER-EXPERIMENT KNOB: modeled battery capacity in millijoules. A node dies
- * (prints "NODE_DEAD id=<id> time=<s>", radio + all processes stopped) when
- * it is used up. With the radio always on a node burns ~65.4 mW
- * (3 V * (20 mA listen + 1.8 mA CPU)), so lifetime_s ~= capacity_mJ / 65.4:
- *   39000 -> ~10 min   60000 -> ~15 min   78000 -> ~20 min
- * See battery-sim/battery-sim.c (the battery is OF-independent: it is
- * identical for OF0, MRHOF and our OF). Built-in default is 500000 (~2 h). */
+/* ENERGY MODEL (frozen, identical for OF0, MRHOF and our OF; see
+ * battery-sim/battery-sim.c for the formula and CLAUDE.md for the rationale).
+ * Radio and CPU follow one duty-cycle ASSUMPTION D; transmit is measured and
+ * not scaled. Primary experiments D = 0.01; sensitivity runs 0.005 and 0.02
+ * (change only this line, rm -rf build, rerun all three OFs). */
+#define BATTERY_SIM_CONF_DUTY_CYCLE 0.01
+
+/* Modeled battery capacity per node, in millijoules: a simulation parameter,
+ * NOT a real battery, and NOT to be tuned to get a convenient death time.
+ * PLACEHOLDER: the final common value is still to be agreed with Ananya.
+ * Under D = 0.01 a node idles at ~0.82 mW, so 60000 mJ is ~20 h of simulated
+ * time (nothing dies in a short run). */
 #define BATTERY_SIM_CONF_CAPACITY_MJ 60000.0
 
 #endif /* PROJECT_CONF_H_ */

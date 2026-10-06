@@ -46,32 +46,58 @@
 #define BATTERY_SIM_TRANSMIT_MA BATTERY_SIM_CONF_TRANSMIT_MA
 #endif
 
-/* Effective current while the radio listens. 20.0 mA models an always-on
- * radio (Contiki-NG's csma never duty-cycles). To model a duty-cycled radio,
- * set this to 20.0 * duty_cycle, e.g. 0.5 for ~2.5%: idle listening then no
- * longer dominates and transmitting (i.e. forwarding) becomes what drains a
- * node -- see CLAUDE.md for why this matters for the research question. */
+/* Radio listening current with the radio fully on (Tmote Sky class). */
 #ifndef BATTERY_SIM_CONF_LISTEN_MA
 #define BATTERY_SIM_LISTEN_MA 20.0
 #else
 #define BATTERY_SIM_LISTEN_MA BATTERY_SIM_CONF_LISTEN_MA
 #endif
 
+/* Duty-cycle ASSUMPTION D (0 < D <= 1), a simulation parameter that stands in
+ * for a low-power MAC; nothing here enforces it on the real radio or CPU.
+ * 1.0 = always on (the default, which reproduces the plain Energest model).
+ * Frozen experiment values (agreed with Ananya): primary 0.01, sensitivity
+ * 0.005 and 0.02. The SAME D, currents, voltage and capacity must be used
+ * for OF0, MRHOF and our OF.
+ *
+ * With Contiki-NG's csma the radio is always on and Cooja counts the CPU as
+ * on 100% of the time, so plain Energest energy is a function of elapsed
+ * time only and cannot tell routing protocols apart. The model therefore is
+ *
+ *   I_cpu_eff    = I_cpu * D + I_lpm * (1 - D)         applied to cpu+lpm time
+ *   I_listen_eff = I_listen * D                        applied to LISTEN time
+ *   I_tx         = I_tx, NOT scaled                    applied to TRANSMIT time
+ *
+ * Energest LISTEN and TRANSMIT are separate states, so scaling LISTEN never
+ * touches TX (no double counting). Receiving a packet is accounted inside
+ * LISTEN (Cooja/Energest accounting; there is no separate RX state), so no
+ * per-packet receive cost is added. */
+#ifndef BATTERY_SIM_CONF_DUTY_CYCLE
+#define BATTERY_SIM_DUTY_CYCLE 1.0
+#else
+#define BATTERY_SIM_DUTY_CYCLE BATTERY_SIM_CONF_DUTY_CYCLE
+#endif
+
+#define BATTERY_SIM_CPU_EFF_MA \
+  (BATTERY_SIM_CPU_MA * BATTERY_SIM_DUTY_CYCLE + \
+   BATTERY_SIM_LPM_MA * (1.0 - BATTERY_SIM_DUTY_CYCLE))
+#define BATTERY_SIM_LISTEN_EFF_MA (BATTERY_SIM_LISTEN_MA * BATTERY_SIM_DUTY_CYCLE)
+
 #define BATTERY_SIM_SUPPLY_VOLTAGE 3.0
 
-/* Modeled starting battery capacity, in millijoules. Set it per experiment:
- *   #define BATTERY_SIM_CONF_CAPACITY_MJ 60000.0
- * A simulation knob, NOT a real battery (two AA cells are ~20,000,000 mJ,
- * which would never drain inside a Cooja run).
+/* Modeled starting battery capacity, in millijoules, per node. A simulation
+ * parameter, NOT a real battery (two AA cells are ~20,000,000 mJ). Set it
+ * from project-conf.h:  #define BATTERY_SIM_CONF_CAPACITY_MJ <value>
  *
- * Choosing a value for a target node lifetime T (seconds) with the radio
- * always on:
- *   power = V * (I_listen + I_cpu) = 3.0 V * (20.0 + 1.8) mA = 65.4 mW
- *   capacity_mJ = T * 65.4          (mW * s = mJ)
- * so 10 min -> ~39,000   15 min -> ~59,000   20 min -> ~78,000.
- * Verify against the NODE_DEAD lines of a first run and rescale.
- * The default (500,000 mJ, ~2 h) deliberately never triggers death in the
- * short smoke tests. */
+ * Do NOT choose it to get a convenient death time. Freeze one common value
+ * for OF0, MRHOF and our OF, justify it as a simulation parameter, and check
+ * sensitivity to it if lifetime is a headline result. To read off what a
+ * value means under the frozen model:
+ *   power_mW = V * (I_cpu_eff + I_listen_eff) + transmit share
+ *   idle lifetime_s ~= capacity_mJ / power_mW
+ * (always on: 65.4 mW, so 60000 mJ ~ 15 min; D = 0.01: ~0.82 mW, so
+ * 60000 mJ ~ 20 h; transmitting shortens it). The built-in default
+ * (500,000 mJ) deliberately never triggers death in short smoke tests. */
 #ifndef BATTERY_SIM_CONF_CAPACITY_MJ
 #define BATTERY_SIM_CAPACITY_MJ 500000.0
 #else
@@ -129,11 +155,16 @@ battery_sim_energy_percent(void)
 
   energest_flush();
 
+  /* mA * s * V = mJ. CPU current is applied to the whole cpu+lpm time (the
+   * duty-cycle assumption replaces the measured CPU/LPM split). */
   consumed_mj = BATTERY_SIM_SUPPLY_VOLTAGE * (
-    BATTERY_SIM_CPU_MA * ((double)energest_type_time(ENERGEST_TYPE_CPU) / ENERGEST_SECOND) +
-    BATTERY_SIM_LPM_MA * ((double)energest_type_time(ENERGEST_TYPE_LPM) / ENERGEST_SECOND) +
-    BATTERY_SIM_TRANSMIT_MA * ((double)energest_type_time(ENERGEST_TYPE_TRANSMIT) / ENERGEST_SECOND) +
-    BATTERY_SIM_LISTEN_MA * ((double)energest_type_time(ENERGEST_TYPE_LISTEN) / ENERGEST_SECOND)
+    BATTERY_SIM_CPU_EFF_MA *
+      ((double)(energest_type_time(ENERGEST_TYPE_CPU) +
+                energest_type_time(ENERGEST_TYPE_LPM)) / ENERGEST_SECOND) +
+    BATTERY_SIM_LISTEN_EFF_MA *
+      ((double)energest_type_time(ENERGEST_TYPE_LISTEN) / ENERGEST_SECOND) +
+    BATTERY_SIM_TRANSMIT_MA *
+      ((double)energest_type_time(ENERGEST_TYPE_TRANSMIT) / ENERGEST_SECOND)
   );
 
   remaining_fraction = 1.0 - (consumed_mj / node_capacity_mj());
