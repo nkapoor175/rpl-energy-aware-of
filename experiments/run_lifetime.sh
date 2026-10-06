@@ -51,8 +51,15 @@ START=$(date +%s)
 END=$(date +%s)
 
 cp "$LOGDIR/COOJA.testlog" "$OUT/cooja.log" 2>/dev/null || echo "no COOJA.testlog produced; see run.out"
+# the root prints EXPERIMENT_OF=<n> at boot: proof of which OF was really built
+BUILT="$(grep -o 'EXPERIMENT_OF=[0-9]*' "$OUT/cooja.log" 2>/dev/null | head -1 | cut -d= -f2)"
+if [ "$BUILT" != "$OF" ]; then
+  echo "OF MISMATCH: requested $OF but firmware reports '${BUILT:-nothing}'" | tee "$OUT/summary.txt"
+  rm -rf "$CONTIKI/$RUNDIR" "$LOGDIR"
+  exit 1
+fi
 {
-  echo "nodes=$NODES seed=$SEED of=$OF ($LABEL) max_seconds=$MAX"
+  echo "nodes=$NODES seed=$SEED of=$OF ($LABEL) of_built_in_firmware=$BUILT max_seconds=$MAX"
   grep "^LIFETIME" "$OUT/cooja.log" || echo "NO LIFETIME LINE (run failed?)"
   grep -o "Speedup: [0-9.]*" "$OUT/run.out" | tail -1
   echo "wall_seconds=$((END - START))"

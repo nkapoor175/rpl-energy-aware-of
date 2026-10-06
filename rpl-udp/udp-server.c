@@ -32,6 +32,7 @@
 #include "net/netstack.h"
 #include "net/ipv6/simple-udp.h"
 #include "sys/battery-sim.h"
+#include <stdio.h>
 
 #include "sys/log.h"
 #define LOG_MODULE "App"
@@ -71,6 +72,10 @@ PROCESS_THREAD(udp_server_process, ev, data)
 
   /* Simulated battery; the root is the mains-powered sink and never dies */
   battery_sim_start(true);
+
+  /* Record which OF this firmware was really built with (0 = energy OF,
+   * 1 = MRHOF, 2 = OF0), so experiment scripts can verify the build. */
+  printf("EXPERIMENT_OF=%d\n", EXPERIMENT_OF);
 
   /* Initialize DAG root */
   NETSTACK_ROUTING.root_start();
