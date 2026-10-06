@@ -24,4 +24,6 @@
  * RPL_CONF_OF_OCP = RPL_OCP_ENERGY. */
 extern rpl_of_t rpl_energy_of;
 
+void rpl_energy_of_update_neighbor_energy(rpl_nbr_t *nbr);
+
 #endif /* RPL_ENERGY_OF_H_ */
