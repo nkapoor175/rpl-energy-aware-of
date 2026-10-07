@@ -1,0 +1,5 @@
+nodes=30 seed=1 of=0 (energy) of_built_in_firmware=0 max_seconds=90000
+overrides: capacity_mj=default duty_cycle=default spread_pct=default avg_degree=10
+LIFETIME nodes=30 clients=29 dead=29 cutoff=0 FND_s=53265 HND_s=68310 LND_s=70821
+Speedup: 114.74552374348065
+wall_seconds=628
