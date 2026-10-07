@@ -40,8 +40,27 @@ rm -rf "$CONTIKI/$RUNDIR"
 mkdir "$CONTIKI/$RUNDIR"
 cp "$CONTIKI/examples/rpl-udp/"{Makefile,project-conf.h,udp-client.c,udp-server.c} "$CONTIKI/$RUNDIR/"
 
+# Optional per-run overrides (environment variables), recorded in summary.txt.
+# They change only THIS run's private copy of project-conf.h:
+#   CAPACITY_MJ  battery capacity per node        (e.g. 30000.0 / 120000.0 for 0.5x / 2x)
+#   DUTY_CYCLE   duty-cycle assumption D          (e.g. 0.005 / 0.02)
+#   SPREAD_PCT   per-node capacity spread percent (recovery experiment only)
+#   AVG_DEGREE   nominal neighbour density for make_csc.py
+OVR=""
+add_override() { OVR="$OVR$1"$'\n'; }
+[ -n "$CAPACITY_MJ" ] && add_override "#undef BATTERY_SIM_CONF_CAPACITY_MJ"$'\n'"#define BATTERY_SIM_CONF_CAPACITY_MJ $CAPACITY_MJ"
+[ -n "$DUTY_CYCLE" ]  && add_override "#undef BATTERY_SIM_CONF_DUTY_CYCLE"$'\n'"#define BATTERY_SIM_CONF_DUTY_CYCLE $DUTY_CYCLE"
+[ -n "$SPREAD_PCT" ]  && add_override "#undef BATTERY_SIM_CONF_CAPACITY_SPREAD_PCT"$'\n'"#define BATTERY_SIM_CONF_CAPACITY_SPREAD_PCT $SPREAD_PCT"
+if [ -n "$OVR" ]; then
+  PC="$CONTIKI/$RUNDIR/project-conf.h"
+  head -n -1 "$PC" > "$PC.new"        # drop the closing #endif of the include guard
+  { printf '%s' "$OVR"; echo "#endif /* PROJECT_CONF_H_ */"; } >> "$PC.new"
+  mv "$PC.new" "$PC"
+fi
+
 python3 "$REPO/experiments/make_csc.py" --nodes "$NODES" --seed "$SEED" \
-  --max-seconds "$MAX" --example-dir "$RUNDIR" --out "$OUT/scenario.csc"
+  --max-seconds "$MAX" --example-dir "$RUNDIR" --out "$OUT/scenario.csc" \
+  ${AVG_DEGREE:+--avg-degree "$AVG_DEGREE"}
 
 LOGDIR="$(mktemp -d)"
 export EXPERIMENT_OF="$OF"
@@ -60,6 +79,7 @@ if [ "$BUILT" != "$OF" ]; then
 fi
 {
   echo "nodes=$NODES seed=$SEED of=$OF ($LABEL) of_built_in_firmware=$BUILT max_seconds=$MAX"
+  echo "overrides: capacity_mj=${CAPACITY_MJ:-default} duty_cycle=${DUTY_CYCLE:-default} spread_pct=${SPREAD_PCT:-default} avg_degree=${AVG_DEGREE:-default}"
   grep "^LIFETIME" "$OUT/cooja.log" || echo "NO LIFETIME LINE (run failed?)"
   grep -o "Speedup: [0-9.]*" "$OUT/run.out" | tail -1
   echo "wall_seconds=$((END - START))"
