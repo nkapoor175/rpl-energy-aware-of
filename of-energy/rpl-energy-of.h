@@ -19,6 +19,16 @@
  * research/course OF. */
 #define RPL_OCP_ENERGY 100
 
+/* Mechanism toggles shared by the OF implementation and RPL core hooks. */
+#ifndef RPL_ENERGY_OF_CONF_ENABLE_DEPLETION
+#define RPL_ENERGY_OF_CONF_ENABLE_DEPLETION 0
+#endif
+
+#ifndef RPL_ENERGY_OF_CONF_ENABLE_ADAPTIVE_WEIGHTING
+#define RPL_ENERGY_OF_CONF_ENABLE_ADAPTIVE_WEIGHTING 0
+#endif
+
+
 /* The OF descriptor, referenced from project-conf.h via
  * RPL_CONF_SUPPORTED_OFS = {&rpl_energy_of} and
  * RPL_CONF_OF_OCP = RPL_OCP_ENERGY. */
