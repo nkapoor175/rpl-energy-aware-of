@@ -84,6 +84,13 @@ NBR_TABLE_DECLARE(rpl_neighbors);
 #define RPL_ENERGY_OF_ENABLE_ADAPTIVE_WEIGHTING RPL_ENERGY_OF_CONF_ENABLE_ADAPTIVE_WEIGHTING
 #endif
 
+/* The adaptive-weighting code is compiled only when it can run: it is called
+ * from update_metric_container(), which exists only with RPL_WITH_MC. Without
+ * MC (the OF0 and MRHOF baseline builds, which still compile this file) the
+ * adaptive code would be defined but never used, and -Werror turns that into a
+ * build error. */
+#define RPL_ENERGY_OF_ADAPTIVE_ACTIVE   (RPL_ENERGY_OF_ENABLE_ADAPTIVE_WEIGHTING && RPL_WITH_MC)
+
 /*---------------------------------------------------------------------------*/
 /* Weights (milli-units, i.e. parts per 1000, so they sum to 1000). Override
  * via project-conf.h for the weight-sensitivity sweep, e.g.:
@@ -349,6 +356,7 @@ nbr_link_metric(rpl_nbr_t *nbr)
 #define DEPLETION_PENALTY_MAX_MILLI 200
 #endif
 
+#if RPL_ENERGY_OF_ADAPTIVE_ACTIVE
 #ifndef ADAPTIVE_WEIGHT_INTERVAL
 #define ADAPTIVE_WEIGHT_INTERVAL 4
 #endif
@@ -478,6 +486,7 @@ update_adaptive_weights(void)
          adaptive_w2,
          adaptive_w3);
 }
+#endif /* RPL_ENERGY_OF_ADAPTIVE_ACTIVE */
 
 /*---------------------------------------------------------------------------*/
 
@@ -529,7 +538,7 @@ weighted_link_cost(rpl_nbr_t *nbr)
    * Use adaptive weights when adaptive weighting is enabled.
    * Otherwise use the fixed baseline weights.
    */
-#if RPL_ENERGY_OF_ENABLE_ADAPTIVE_WEIGHTING
+#if RPL_ENERGY_OF_ADAPTIVE_ACTIVE
   uint16_t score_w1 = adaptive_w1;
   uint16_t score_w2 = adaptive_w2;
   uint16_t score_w3 = adaptive_w3;
@@ -733,7 +742,7 @@ update_metric_container(void)
     curr_instance.mc.obj.energy.energy_est = battery_sim_energy_percent();
   }
 
-#if RPL_ENERGY_OF_ENABLE_ADAPTIVE_WEIGHTING
+#if RPL_ENERGY_OF_ADAPTIVE_ACTIVE
   update_adaptive_weights();
 #endif
 }
