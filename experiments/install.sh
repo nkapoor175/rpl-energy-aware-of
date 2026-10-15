@@ -16,12 +16,18 @@ CONTIKI="${1:-$HOME/contiki-ng}"
 cp "$REPO/battery-sim/battery-sim.c" "$REPO/battery-sim/battery-sim.h" "$CONTIKI/os/sys/"
 cp "$REPO/of-energy/rpl-energy-of.c" "$REPO/of-energy/rpl-energy-of.h" "$CONTIKI/os/net/routing/rpl-lite/"
 
-DAG="$CONTIKI/os/net/routing/rpl-lite/rpl-dag.c"
-if ! grep -q "rpl_energy_of" "$DAG"; then
-  sed -i 's/extern rpl_of_t rpl_of0, rpl_mrhof;/extern rpl_of_t rpl_of0, rpl_mrhof, rpl_energy_of;/' "$DAG"
+# Apply the tracked core patch.
+# If it is already applied, leave the existing changes untouched.
+if git -C "$CONTIKI" apply --check "$REPO/patches/energy-of-core.patch" 2>/dev/null; then
+  git -C "$CONTIKI" apply "$REPO/patches/energy-of-core.patch"
+  echo "applied energy-of-core.patch"
+elif git -C "$CONTIKI" apply --reverse --check "$REPO/patches/energy-of-core.patch" 2>/dev/null; then
+  echo "energy-of-core.patch already applied; skipping"
+else
+  echo "cannot apply energy-of-core.patch cleanly"
+  echo "the core files may contain conflicting changes"
+  exit 1
 fi
-grep -q "rpl_energy_of;" "$DAG" || { echo "rpl-dag.c patch failed"; exit 1; }
-
 for f in Makefile project-conf.h udp-client.c udp-server.c; do
   cp "$REPO/rpl-udp/$f" "$CONTIKI/examples/rpl-udp/$f"
 done

@@ -156,12 +156,136 @@ nbr_energy_percent(rpl_nbr_t *nbr)
   if(nbr->mc.type == RPL_DAG_MC_ENERGY) {
     return nbr->mc.obj.energy.energy_est;
   }
-#endif /* RPL_WITH_MC */
-  /* No energy data available for this neighbor yet (MC disabled, or no DIO
-   * received with the energy MC so far). Treat as "unknown -> full", so the
-   * energy term contributes no penalty rather than an artificial one. */
+#endif
+
+  /* No energy data available for this neighbor yet. */
   return ENERGY_MAX;
 }
+/*---------------------------------------------------------------------------*/
+/*
+ * Update the rolling depletion history for one neighbor.
+ *
+ * Neighbor energy is received through the standard RPL DAG Metric
+ * Container energy_est field. Four observations are retained in a
+ * circular buffer and the depletion rate is calculated between the
+ * oldest and newest observations.
+ */
+/*---------------------------------------------------------------------------*/
+#if RPL_ENERGY_OF_ENABLE_DEPLETION
+
+void
+rpl_energy_of_update_neighbor_energy(rpl_nbr_t *nbr)
+{
+  uint8_t current_energy;
+  clock_time_t now;
+  uint8_t index;
+  uint8_t oldest_index;
+  uint8_t newest_index;
+  clock_time_t dt;
+  int32_t energy_drop;
+  int32_t rate_milli;
+
+  if(nbr == NULL) {
+    return;
+  }
+
+#if RPL_WITH_MC
+  if(nbr->mc.type != RPL_DAG_MC_ENERGY) {
+    return;
+  }
+
+  current_energy = nbr->mc.obj.energy.energy_est;
+#else
+  return;
+#endif
+
+  now = clock_time();
+
+  /*
+   * Store the new energy observation in the circular history buffer.
+   */
+  index = nbr->energy_history_index;
+
+  nbr->energy_history[index] = current_energy;
+  nbr->energy_time_history[index] = now;
+
+  /*
+   * Advance the circular-buffer index.
+   */
+  nbr->energy_history_index =
+    (index + 1) % RPL_ENERGY_DEPLETION_HISTORY_LEN;
+
+  /*
+   * Increase the number of valid observations until the
+   * history buffer becomes full.
+   */
+  if(nbr->energy_history_count < RPL_ENERGY_DEPLETION_HISTORY_LEN) {
+    nbr->energy_history_count++;
+  }
+
+  /*
+   * Keep a total observation count for the depletion scoring logic.
+   */
+  if(nbr->energy_samples < 255) {
+    nbr->energy_samples++;
+  }
+
+  /*
+   * A depletion rate cannot be calculated until the complete
+   * rolling history is available.
+   */
+  if(nbr->energy_history_count < RPL_ENERGY_DEPLETION_HISTORY_LEN) {
+    LOG_DBG("[DEPLETION] history=%u/%u energy=%u rate=0\n",
+           nbr->energy_history_count,
+           RPL_ENERGY_DEPLETION_HISTORY_LEN,
+           current_energy);
+    return;
+  }
+
+  /*
+   * The next position to be written is the oldest observation.
+   * The previous position is the newest observation.
+   */
+  oldest_index = nbr->energy_history_index;
+
+  if(nbr->energy_history_index == 0) {
+    newest_index = RPL_ENERGY_DEPLETION_HISTORY_LEN - 1;
+  } else {
+    newest_index = nbr->energy_history_index - 1;
+  }
+
+  dt = nbr->energy_time_history[newest_index] -
+       nbr->energy_time_history[oldest_index];
+
+  energy_drop =
+    (int32_t)nbr->energy_history[oldest_index] -
+    (int32_t)nbr->energy_history[newest_index];
+
+  if(dt == 0) {
+    rate_milli = 0;
+  } else {
+    rate_milli =
+      (energy_drop * 1000 * CLOCK_SECOND) / dt;
+  }
+
+  /*
+   * Energy increasing or remaining constant means no depletion.
+   */
+  if(rate_milli < 0) {
+    rate_milli = 0;
+  }
+
+  nbr->depletion_rate_milli = rate_milli;
+
+  LOG_DBG("[DEPLETION] oldest=%u newest=%u drop=%ld rate=%ld/s history=%u\n",
+         nbr->energy_history[oldest_index],
+         nbr->energy_history[newest_index],
+         (long)energy_drop,
+         (long)rate_milli,
+         nbr->energy_history_count);
+}
+#endif /* RPL_ENERGY_OF_ENABLE_DEPLETION */
+
 /*---------------------------------------------------------------------------*/
 static uint16_t
 nbr_hopcount(rpl_nbr_t *nbr)
@@ -208,6 +332,155 @@ nbr_link_metric(rpl_nbr_t *nbr)
 /*---------------------------------------------------------------------------*/
 /* Composite weighted-sum score for this single hop (not path-accumulated),
  * scaled into rank-comparable units. Lower is better. */
+
+/*---------------------------------------------------------------------------*/
+/* Local adaptive weighting.                                                 */
+/*---------------------------------------------------------------------------*/
+/*
+ * Reference depletion rate used to normalize the measured
+ * energy decrease. The depletion rate is expressed in
+ * milli-energy-units per second.
+ */
+#ifndef DEPLETION_RATE_REF_MILLI
+#define DEPLETION_RATE_REF_MILLI 1000
+#endif
+
+#ifndef DEPLETION_PENALTY_MAX_MILLI
+#define DEPLETION_PENALTY_MAX_MILLI 200
+#endif
+
+#ifndef ADAPTIVE_WEIGHT_INTERVAL
+#define ADAPTIVE_WEIGHT_INTERVAL 4
+#endif
+
+#ifndef ADAPTIVE_WEIGHT_STEP
+#define ADAPTIVE_WEIGHT_STEP 50
+#endif
+
+#ifndef ADAPTIVE_W2_MIN
+#define ADAPTIVE_W2_MIN 300
+#endif
+
+#ifndef ADAPTIVE_W2_MAX
+#define ADAPTIVE_W2_MAX 600
+#endif
+
+#ifndef ADAPTIVE_SPREAD_HIGH
+#define ADAPTIVE_SPREAD_HIGH 250
+#endif
+
+#ifndef ADAPTIVE_SPREAD_LOW
+#define ADAPTIVE_SPREAD_LOW 100
+#endif
+
+static uint16_t adaptive_w1 = W1_ETX_MILLI;
+static uint16_t adaptive_w2 = W2_ENERGY_MILLI;
+static uint16_t adaptive_w3 = W3_HOP_MILLI;
+static uint8_t adaptive_update_count = 0;
+
+/*---------------------------------------------------------------------------*/
+/* Calculate the energy spread among the node's current RPL neighbors.       */
+/*---------------------------------------------------------------------------*/
+static uint16_t
+compute_neighbor_energy_spread(void)
+{
+  uint16_t min_energy = ENERGY_MAX;
+  uint16_t max_energy = ENERGY_MIN;
+  uint8_t found = 0;
+  rpl_nbr_t *nbr;
+
+  for(nbr = nbr_table_head(rpl_neighbors);
+      nbr != NULL;
+      nbr = nbr_table_next(rpl_neighbors, nbr)) {
+
+    uint8_t energy = nbr_energy_percent(nbr);
+
+    if(energy < min_energy) {
+      min_energy = energy;
+    }
+
+    if(energy > max_energy) {
+      max_energy = energy;
+    }
+
+    found = 1;
+  }
+
+  if(!found) {
+    return 0;
+  }
+
+  return normalize_milli(max_energy - min_energy,
+                         ENERGY_MIN,
+                         ENERGY_MAX);
+}
+
+/*---------------------------------------------------------------------------*/
+/* Adjust local weights according to neighbor energy variation.              */
+/*---------------------------------------------------------------------------*/
+static void
+update_adaptive_weights(void)
+{
+  uint16_t spread;
+
+  if(!RPL_ENERGY_OF_ENABLE_ADAPTIVE_WEIGHTING) {
+    return;
+  }
+
+  adaptive_update_count++;
+
+  if(adaptive_update_count < ADAPTIVE_WEIGHT_INTERVAL) {
+    return;
+  }
+
+  adaptive_update_count = 0;
+
+  spread = compute_neighbor_energy_spread();
+
+  /*
+   * Large energy variation:
+   * give more importance to residual energy.
+   */
+  if(spread > ADAPTIVE_SPREAD_HIGH) {
+
+    if(adaptive_w2 + ADAPTIVE_WEIGHT_STEP <= ADAPTIVE_W2_MAX &&
+       adaptive_w1 >= 40 &&
+       adaptive_w3 >= 10) {
+
+      adaptive_w2 += ADAPTIVE_WEIGHT_STEP;
+      adaptive_w1 -= 40;
+      adaptive_w3 -= 10;
+    }
+  }
+
+  /*
+   * Small energy variation:
+   * energy is less useful for distinguishing parents,
+   * so give some weight back to ETX.
+   */
+  else if(spread < ADAPTIVE_SPREAD_LOW) {
+
+    if(adaptive_w2 > ADAPTIVE_W2_MIN && adaptive_w1 + 40 <= 1000 && adaptive_w3 + 10 <= 1000) {
+      adaptive_w2 -= ADAPTIVE_WEIGHT_STEP;
+
+      if(adaptive_w2 < ADAPTIVE_W2_MIN) {
+        adaptive_w2 = ADAPTIVE_W2_MIN;
+      }
+
+      adaptive_w1 += 40;
+      adaptive_w3 += 10;
+    }
+  }
+
+  LOG_DBG("[ADAPTIVE] spread=%u ETX=%u ENERGY=%u HOP=%u\n",
+         spread,
+         adaptive_w1,
+         adaptive_w2,
+         adaptive_w3);
+}
+
+/*---------------------------------------------------------------------------*/
+
 static uint16_t
 weighted_link_cost(rpl_nbr_t *nbr)
 {
@@ -224,17 +497,58 @@ weighted_link_cost(rpl_nbr_t *nbr)
    * compute_energy_gate_threshold) -- this is scoring among the survivors,
    * not where the exclusion happens. */
 
-  /* TODO (depletion-rate tracking, checklist item, Ananya's DIO work):
-   * fold in a penalty based on the neighbor's rate of energy decline
-   * (rolling DIO history), not just this energy_norm snapshot. Guard the
-   * addition with "#if RPL_ENERGY_OF_ENABLE_DEPLETION" so the ablation
-   * toggle in the file header actually does something once this lands. */
+#if RPL_ENERGY_OF_ENABLE_DEPLETION
+  /*
+   * Penalize neighbors whose advertised energy is declining rapidly.
+   *
+   * depletion_rate_milli is expressed in energy-estimate units per
+   * second, scaled by 1000.
+   */
+  uint32_t depletion_penalty = 0;
+
+  if(nbr->energy_samples >= RPL_ENERGY_DEPLETION_HISTORY_LEN &&
+     nbr->depletion_rate_milli > 0) {
+
+    uint32_t rate = (uint32_t)nbr->depletion_rate_milli;
+
+    if(rate > DEPLETION_RATE_REF_MILLI) {
+      rate = DEPLETION_RATE_REF_MILLI;
+    }
+
+    depletion_penalty =
+      (rate * DEPLETION_PENALTY_MAX_MILLI) /
+      DEPLETION_RATE_REF_MILLI;
+
+    LOG_DBG("[DEPLETION SCORE] rate=%lu penalty=%lu\n",
+           (unsigned long)nbr->depletion_rate_milli,
+           (unsigned long)depletion_penalty);
+  }
+#endif
+
+  /*
+   * Use adaptive weights when adaptive weighting is enabled.
+   * Otherwise use the fixed baseline weights.
+   */
+#if RPL_ENERGY_OF_ENABLE_ADAPTIVE_WEIGHTING
+  uint16_t score_w1 = adaptive_w1;
+  uint16_t score_w2 = adaptive_w2;
+  uint16_t score_w3 = adaptive_w3;
+#else
+  uint16_t score_w1 = W1_ETX_MILLI;
+  uint16_t score_w2 = W2_ENERGY_MILLI;
+  uint16_t score_w3 = W3_HOP_MILLI;
+#endif
 
   uint32_t score_milli =
-    (uint32_t)W1_ETX_MILLI * etx_norm +
-    (uint32_t)W2_ENERGY_MILLI * (1000 - energy_norm) +
-    (uint32_t)W3_HOP_MILLI * hop_norm;
-  score_milli /= 1000; /* weights were in milli-units too */
+    (uint32_t)score_w1 * etx_norm +
+    (uint32_t)score_w2 * (1000 - energy_norm) +
+    (uint32_t)score_w3 * hop_norm;
+
+#if RPL_ENERGY_OF_ENABLE_DEPLETION
+  score_milli += depletion_penalty;
+#endif
+
+  score_milli /= 1000; /* weights are in milli-units */
 
   return (uint16_t)MIN(score_milli * SCORE_TO_RANK_SCALE, 0xffff);
 }
@@ -419,18 +733,9 @@ update_metric_container(void)
     curr_instance.mc.obj.energy.energy_est = battery_sim_energy_percent();
   }
 
-  /* TODO (local adaptive weighting, checklist item, Ananya's DIO work):
-   * every K DIO intervals, inspect the spread of nbr_energy_percent()
-   * across current neighbors and nudge W2_ENERGY_MILLI (and W1/W3 to
-   * compensate, keeping the sum at 1000) up or down. Needs the DIO
-   * extension to carry depletion-rate data too, not just the snapshot
-   * already carried by RPL_DAG_MC_ENERGY. Guard with
-   * "#if RPL_ENERGY_OF_ENABLE_ADAPTIVE_WEIGHTING" so the ablation toggle in
-   * the file header actually does something once this lands. Weights
-   * (W1_ETX_MILLI etc.) are currently #define constants set at compile
-   * time -- adaptive weighting will need to turn them into mutable state
-   * (e.g. static variables initialized from the same defaults) since they
-   * change at runtime. */
+#if RPL_ENERGY_OF_ENABLE_ADAPTIVE_WEIGHTING
+  update_adaptive_weights();
+#endif
 }
 #endif /* RPL_WITH_MC */
 /*---------------------------------------------------------------------------*/
