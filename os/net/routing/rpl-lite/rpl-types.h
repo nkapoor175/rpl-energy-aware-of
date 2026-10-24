@@ -150,6 +150,7 @@ struct rpl_nbr {
   uint8_t energy_history_index;
 
   int32_t depletion_rate_milli;
+  int32_t depletion_rate_micro;
   uint8_t depletion_estimate_valid;
 
   rpl_rank_t rank;

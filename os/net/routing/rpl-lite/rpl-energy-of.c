@@ -251,6 +251,7 @@ rpl_energy_of_update_neighbor_energy(rpl_nbr_t *nbr)
 
   nbr->depletion_estimate_valid = 0;
   nbr->depletion_rate_milli = 0;
+  nbr->depletion_rate_micro = 0;
 
   if(nbr->energy_history_count < 2) {
     LOG_DBG("[DEPLETION] samples=%u valid=0 rate=0\n",
@@ -300,14 +301,19 @@ rpl_energy_of_update_neighbor_energy(rpl_nbr_t *nbr)
     (int32_t)nbr->energy_history[candidate_index] -
     (int32_t)nbr->energy_history[newest_index];
 
+  int32_t rate_micro = 0;
   if(dt == 0 || energy_drop <= 0) {
     rate_milli = 0;
+    rate_micro = 0;
   } else {
     rate_milli =
       (int32_t)(((int64_t)energy_drop * 1000 * CLOCK_SECOND) / dt);
+    rate_micro =
+    (int32_t)(((int64_t)energy_drop * 1000000LL * CLOCK_SECOND) / dt);
   }
 
   nbr->depletion_rate_milli = rate_milli;
+  nbr->depletion_rate_micro = rate_micro;
   nbr->depletion_estimate_valid = 1;
 
   LOG_DBG("[DEPLETION] old=%u new=%u drop=%ld dt_s=%lu "
@@ -381,7 +387,7 @@ nbr_link_metric(rpl_nbr_t *nbr)
 #endif
 
 #ifndef DEPLETION_PENALTY_MAX_MILLI
-#define DEPLETION_PENALTY_MAX_MILLI 200
+#define DEPLETION_PENALTY_MAX_MILLI 180
 #endif
 
 #if RPL_ENERGY_OF_ADAPTIVE_ACTIVE
@@ -534,31 +540,34 @@ weighted_link_cost(rpl_nbr_t *nbr)
    * compute_energy_gate_threshold) -- this is scoring among the survivors,
    * not where the exclusion happens. */
 
-#if RPL_ENERGY_OF_ENABLE_DEPLETION
+
   /*
    * Penalize neighbors whose advertised energy is declining rapidly.
-   *
-   * depletion_rate_milli is expressed in energy-estimate units per
-   * second, scaled by 1000.
+   * depletion_rate_micro is energy-estimate units per second,
+   * scaled by 1,000,000 for finer precision.
    */
   uint32_t depletion_penalty = 0;
 
+#if RPL_ENERGY_OF_ENABLE_DEPLETION
   if(nbr->depletion_estimate_valid &&
-     nbr->depletion_rate_milli > 0) {
+     nbr->depletion_rate_micro > 0) {
 
-    uint32_t rate = (uint32_t)nbr->depletion_rate_milli;
+    uint64_t rate_micro = (uint64_t)nbr->depletion_rate_micro;
+    uint64_t rate_ref_micro =
+      (uint64_t)DEPLETION_RATE_REF_MILLI * 1000ULL;
 
-    if(rate > DEPLETION_RATE_REF_MILLI) {
-      rate = DEPLETION_RATE_REF_MILLI;
+    if(rate_micro > rate_ref_micro) {
+      rate_micro = rate_ref_micro;
     }
 
-    depletion_penalty =
-      (rate * DEPLETION_PENALTY_MAX_MILLI) /
-      DEPLETION_RATE_REF_MILLI;
+    depletion_penalty = (uint32_t)(
+      (rate_micro * DEPLETION_PENALTY_MAX_MILLI) /
+      rate_ref_micro);
 
-    LOG_DBG("[DEPLETION SCORE] rate=%lu penalty=%lu\n",
-           (unsigned long)nbr->depletion_rate_milli,
-           (unsigned long)depletion_penalty);
+    LOG_DBG("[DEPLETION SCORE] rate_milli=%ld rate_micro=%ld penalty=%lu\n",
+            (long)nbr->depletion_rate_milli,
+            (long)nbr->depletion_rate_micro,
+            (unsigned long)depletion_penalty);
   }
 #endif
 
@@ -581,29 +590,21 @@ weighted_link_cost(rpl_nbr_t *nbr)
     (uint32_t)score_w2 * (1000 - energy_norm) +
     (uint32_t)score_w3 * hop_norm;
 
-  uint32_t score_milli = base_score_milli;
+  uint32_t base_cost = base_score_milli / 1000U;
+  uint32_t final_cost = base_cost;
 
-  #if RPL_ENERGY_OF_ENABLE_DEPLETION
-    score_milli +=
-      (depletion_penalty * 1000U) / DEPLETION_PENALTY_MAX_MILLI;
-  #endif
+#if RPL_ENERGY_OF_ENABLE_DEPLETION
+  final_cost += depletion_penalty;
+#endif
 
-  uint32_t base_cost = base_score_milli / 1000;
-  uint32_t final_cost = score_milli / 1000;
-
-  #if RPL_ENERGY_OF_ENABLE_DEPLETION
-    LOG_DBG("[ENERGY OF COST] base=%lu penalty=%lu final=%lu\n",
-            (unsigned long)base_cost,
-            (unsigned long)depletion_penalty,
-            (unsigned long)final_cost);
-  #else
-    LOG_DBG("[ENERGY OF COST] base=%lu penalty=0 final=%lu\n",
-            (unsigned long)base_cost,
-            (unsigned long)final_cost);
-  #endif
+  LOG_DBG("[ENERGY OF COST] base=%lu penalty=%lu final=%lu\n",
+          (unsigned long)base_cost,
+          (unsigned long)depletion_penalty,
+          (unsigned long)final_cost);
 
   return (uint16_t)MIN(final_cost * SCORE_TO_RANK_SCALE, 0xffff);
 }
+
 /*---------------------------------------------------------------------------*/
 static uint16_t
 nbr_path_cost(rpl_nbr_t *nbr)
