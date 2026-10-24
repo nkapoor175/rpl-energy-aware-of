@@ -44,6 +44,7 @@ udp_rx_callback(struct simple_udp_connection *c,
 }
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data)
+
 {
   static struct etimer periodic_timer;
   static char str[32];
@@ -52,6 +53,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
   static uint32_t missed_tx_count;
 
   PROCESS_BEGIN();
+  LOG_INFO("EXPERIMENT_OF=%d\n", EXPERIMENT_OF);
 
   /* Start battery model for this battery-powered node */
   battery_sim_start(false);

@@ -67,7 +67,7 @@ udp_rx_callback(struct simple_udp_connection *c,
 PROCESS_THREAD(udp_server_process, ev, data)
 {
   PROCESS_BEGIN();
-
+  LOG_INFO("EXPERIMENT_OF=%d\n", EXPERIMENT_OF);
   /* Start battery model; the RPL root is mains-powered */
   battery_sim_start(true);
 
