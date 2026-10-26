@@ -5,3 +5,8 @@
 results/**/cooja.log
 results/**/run.out
 results/**/build.log
+
+# Build output (Contiki-NG makes build/<target>/ next to the sources)
+build/
+*.native
+*.cooja
