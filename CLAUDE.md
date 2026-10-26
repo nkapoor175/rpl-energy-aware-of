@@ -110,7 +110,7 @@ claim any benefit of the proposed OF until the main matrix has been run and anal
 | Weights | 0.4 / 0.4 / 0.2 (ETX / energy / hop), per-mille in code |
 | Gate | bottom 20% of neighbour energy, minimum 5 neighbours |
 | Depletion | window 60 min (30 min sensitivity), spacing 10 min, 8 samples, reference rate 10 milli-units/s, max penalty 180 |
-| Adaptive | every 4 updates, step 50 per-mille on w2 (w1 -40, w3 -10 / +40, +10), w2 in [300, 600], spread thresholds 250 (high) / 100 (low) per-mille |
+| Adaptive | every 4 updates, step 50 per-mille on w2 (w1 -40, w3 -10 / +40, +10), w2 in [300, 600], spread thresholds 100 (high) / 40 (low) per-mille (lowered from 250 / 100 in `e779e35` without being mentioned in its message; with identical batteries the observed spread is 0-15 per-mille, so it stays in the low branch either way) |
 
 ### Variants (`run_lifetime.sh NODES SEED VARIANT`)
 `of0`, `mrhof` (baselines); `base` (our weighted sum, no mechanism); `gating`, `depletion`,
