@@ -36,16 +36,16 @@ index 99f26d3f2..bbcc86bd1 100644
    if(curr_instance.dag.lifetime == 0 ||
      (nbr != NULL && nbr == curr_instance.dag.preferred_parent)) {
 diff --git a/os/net/routing/rpl-lite/rpl-types.h b/os/net/routing/rpl-lite/rpl-types.h
-index 2c468a7e1..3a8ed18bb 100644
+index 2c468a7e1..c46c2f971 100644
 --- a/os/net/routing/rpl-lite/rpl-types.h
 +++ b/os/net/routing/rpl-lite/rpl-types.h
-@@ -140,6 +140,18 @@ struct rpl_nbr {
+@@ -140,6 +140,19 @@ struct rpl_nbr {
  #if RPL_WITH_MC
    rpl_metric_container_t mc;
  #endif /* RPL_WITH_MC */
 +
 +  /* Energy-aware OF: neighbor energy history */
-+#define RPL_ENERGY_DEPLETION_HISTORY_LEN 4
++#define RPL_ENERGY_DEPLETION_HISTORY_LEN 8
 +  uint8_t energy_history[RPL_ENERGY_DEPLETION_HISTORY_LEN];
 +  clock_time_t energy_time_history[RPL_ENERGY_DEPLETION_HISTORY_LEN];
 +
@@ -53,7 +53,8 @@ index 2c468a7e1..3a8ed18bb 100644
 +  uint8_t energy_history_index;
 +
 +  int32_t depletion_rate_milli;
-+  uint8_t energy_samples;
++  int32_t depletion_rate_micro;
++  uint8_t depletion_estimate_valid;
 +
    rpl_rank_t rank;
    uint8_t dtsn;

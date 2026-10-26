@@ -56,6 +56,10 @@ PROCESS_THREAD(udp_client_process, ev, data)
   /* Simulated battery + death (same for every OF under test) */
   battery_sim_start(false);
 
+  /* Which OF this firmware was built with (0 = energy OF, 1 = MRHOF,
+   * 2 = OF0); the root prints the same marker, see udp-server.c. */
+  LOG_INFO("EXPERIMENT_OF=%d\n", EXPERIMENT_OF);
+
   /* Initialize UDP connection */
   simple_udp_register(&udp_conn, UDP_CLIENT_PORT, NULL,
                       UDP_SERVER_PORT, udp_rx_callback);
