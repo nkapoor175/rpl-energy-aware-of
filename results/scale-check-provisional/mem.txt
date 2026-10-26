@@ -1,0 +1,3 @@
+baseline_used_mb=1613
+peak_used_mb=2763  (extra over baseline: 1150 MB, both runs together)
+total_wall_seconds=1808

@@ -1,0 +1,4 @@
+2 runs, 2 at a time -> /mnt/c/Users/Navsssssss/Desktop/rpl-energy-aware-of/results/scale-check-provisional/2026-10-07/batch.txt
+nodes=30 seed=1 of=0 rc=0 LIFETIME nodes=30 clients=29 dead=29 cutoff=0 FND_s=53265 HND_s=68310 LND_s=70821
+nodes=50 seed=1 of=0 rc=0 LIFETIME nodes=50 clients=49 dead=49 cutoff=0 FND_s=55466 HND_s=65329 LND_s=71125
+done: 2 of 2 runs finished with exit code 0, 0 without a LIFETIME line
