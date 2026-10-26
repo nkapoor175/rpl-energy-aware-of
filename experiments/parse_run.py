@@ -14,7 +14,7 @@ used for metadata when present. Written into the run folder:
 
 Log lines understood (all start with "<simulated microseconds> node-<id> "):
     [INFO: App ] Sending request K to ...            client sends request K
-    [INFO: App ] Received request 'hello K' from fd00::20X:X:X:X   the root received it (X = client id in hex)
+    [INFO: App ] Received request 'hello K' from fd00::20X:X:X:X   the root received it (2XX = client id as two hex digits)
     [INFO: App ] Received response 'hello K' from ...  the client got the answer
     ENERGY id= time= consumed_uj= capacity_uj= remaining=   every 60 s per client
     NODE_DEAD id= time=
@@ -42,7 +42,7 @@ from pathlib import Path
 
 LINE = re.compile(r"^(\d+)\s+node-(\d+)\s+(.*)$")
 SEND = re.compile(r"Sending request (\d+) to")
-RX_REQ = re.compile(r"Received request 'hello (\d+)' from fd00::20([0-9a-fA-F]+):")
+RX_REQ = re.compile(r"Received request 'hello (\d+)' from fd00::2([0-9a-fA-F]{2}):")
 RX_RESP = re.compile(r"Received response 'hello (\d+)' from")
 ENERGY = re.compile(r"ENERGY id=(\d+) time=(\d+) consumed_uj=(\d+) capacity_uj=(\d+) remaining=(\d+)")
 DEAD = re.compile(r"NODE_DEAD id=(\d+) time=(\d+)")
