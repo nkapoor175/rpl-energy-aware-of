@@ -1,0 +1,61 @@
+diff --git a/os/net/routing/rpl-lite/rpl-dag.c b/os/net/routing/rpl-lite/rpl-dag.c
+index 99f26d3f2..bbcc86bd1 100644
+--- a/os/net/routing/rpl-lite/rpl-dag.c
++++ b/os/net/routing/rpl-lite/rpl-dag.c
+@@ -43,6 +43,7 @@
+  */
+ 
+ #include "net/routing/rpl-lite/rpl.h"
++#include "net/routing/rpl-lite/rpl-energy-of.h"
+ #include "net/ipv6/uip-sr.h"
+ #include "net/nbr-table.h"
+ #include "net/link-stats.h"
+@@ -54,7 +55,7 @@
+ #define LOG_LEVEL LOG_LEVEL_RPL
+ 
+ /*---------------------------------------------------------------------------*/
+-extern rpl_of_t rpl_of0, rpl_mrhof;
++extern rpl_of_t rpl_of0, rpl_mrhof, rpl_energy_of;
+ static rpl_of_t * const objective_functions[] = RPL_SUPPORTED_OFS;
+ static int process_dio_init_dag(rpl_dio_t *dio);
+ 
+@@ -460,7 +461,14 @@ process_dio_from_current_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
+     LOG_ERR("neighbor table full, dropping DIO\n");
+     return;
+   }
+-
++  #if RPL_ENERGY_OF_CONF_ENABLE_DEPLETION
++    if(curr_instance.of == &rpl_energy_of) {
++      nbr = rpl_neighbor_get_from_ipaddr(from);
++      if(nbr != NULL) {
++        rpl_energy_of_update_neighbor_energy(nbr);
++      }
++    }
++  #endif
+   /* Init lifetime if not set yet. Refresh it at every DIO from preferred parent. */
+   if(curr_instance.dag.lifetime == 0 ||
+     (nbr != NULL && nbr == curr_instance.dag.preferred_parent)) {
+diff --git a/os/net/routing/rpl-lite/rpl-types.h b/os/net/routing/rpl-lite/rpl-types.h
+index 2c468a7e1..c46c2f971 100644
+--- a/os/net/routing/rpl-lite/rpl-types.h
++++ b/os/net/routing/rpl-lite/rpl-types.h
+@@ -140,6 +140,19 @@ struct rpl_nbr {
+ #if RPL_WITH_MC
+   rpl_metric_container_t mc;
+ #endif /* RPL_WITH_MC */
++
++  /* Energy-aware OF: neighbor energy history */
++#define RPL_ENERGY_DEPLETION_HISTORY_LEN 8
++  uint8_t energy_history[RPL_ENERGY_DEPLETION_HISTORY_LEN];
++  clock_time_t energy_time_history[RPL_ENERGY_DEPLETION_HISTORY_LEN];
++
++  uint8_t energy_history_count;
++  uint8_t energy_history_index;
++
++  int32_t depletion_rate_milli;
++  int32_t depletion_rate_micro;
++  uint8_t depletion_estimate_valid;
++
+   rpl_rank_t rank;
+   uint8_t dtsn;
+ };
