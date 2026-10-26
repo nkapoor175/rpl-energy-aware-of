@@ -36,7 +36,7 @@ freeze() {   # freeze NAME : record exactly what is being run, before it runs
   local d="$REPO/results/$1"; mkdir -p "$d"
   {
     echo "stage=$STAGE name=$1 started=$(date -Is)"
-    echo "git_commit=$(git -C "$REPO" rev-parse HEAD 2>/dev/null) dirty=$(git -C "$REPO" status --porcelain 2>/dev/null | grep -vc '^??')"
+    echo "git_commit=$(git -c safe.directory="$REPO" -C "$REPO" rev-parse HEAD 2>/dev/null) dirty=$(git -c safe.directory="$REPO" -C "$REPO" status --porcelain 2>/dev/null | grep -vc '^??')"
     echo "--- project-conf.h (frozen energy model) ---"
     grep -E "BATTERY_SIM_CONF_|EXPERIMENT_OF|ENERGEST" "$REPO/rpl-udp/project-conf.h" | grep -v '^ \*' | grep "#define"
     echo "--- objective-function constants ---"
