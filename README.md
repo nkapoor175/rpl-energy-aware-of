@@ -19,35 +19,41 @@ of every checklist item (it is the living project log).
 | Part | State |
 |---|---|
 | Baseline weighted-sum OF | done, validated in Cooja |
-| Energy-gated filtering | done; fires as designed, effect on results not yet measured |
-| Depletion-rate tracking, adaptive weighting | in progress (Ananya) |
-| OF-independent battery + node death, duty-cycle energy model | done, frozen for all three OFs |
-| Lifetime experiment tooling (scenarios, runner, batch runner) | done |
-| Evaluation runs (10/30/50 nodes x 5 seeds x 3 OFs) | not started; waiting on the validation steps in CLAUDE.md |
+| The three mechanisms (gating, depletion tracking, adaptive weighting) | implemented, each behind a flag; build-tested in every configuration |
+| OF-independent battery + node death, duty-cycle energy model | done, frozen for all variants |
+| Experiment tooling (scenarios, runners, parsers, stage runner) | done |
+| Evaluation runs (10/30/50 nodes x 5 seeds x 8 variants, plus sensitivity runs) | running; see `results/` and `docs/decision-log.md` |
 
-No performance result is claimed anywhere in this repository yet.
+No performance result is claimed anywhere in this repository until the evaluation has been
+run and analysed. `CLAUDE.md` holds the frozen settings and the compact current state;
+`docs/decision-log.md` holds the dated reasoning and measurements.
 
 ## Layout
 
 | Path | What it is |
 |---|---|
-| `of-energy/` | the energy-aware OF (`rpl-energy-of.{c,h}`), ablation toggles, install notes |
+| `of-energy/` | the energy-aware OF (`rpl-energy-of.{c,h}`), mechanism flags, install notes |
+| `patches/` | the single patch to Contiki-NG core (OF registration, DIO hook, neighbour energy history) |
+| `docs/` | `decision-log.md` (dated reasoning and measurements) and the case-study report |
 | `battery-sim/` | simulated battery and node death, independent of the OF so OF0, MRHOF and our OF run under the identical model |
 | `rpl-udp/` | the example app (UDP client/server), `project-conf.h` with the frozen settings, small test scenarios |
-| `experiments/` | `install.sh`, `make_csc.py` (scenario generator), `run_lifetime.sh` (one run), `run_batch.sh` (a matrix of runs) |
+| `experiments/` | installer, scenario generator, one-run / batch / stage runners, and the log parsers |
 | `results/` | scenarios and summaries of runs; raw Cooja logs are git-ignored (tens of MB each) |
 | `CLAUDE.md` | design, decisions, open questions, status log |
 
 ## Quick start (Linux / WSL2 with a Contiki-NG checkout at `~/contiki-ng`)
 
 ```bash
-bash experiments/install.sh                       # copies everything into Contiki-NG (safe to rerun)
+bash experiments/install.sh                       # installs the OF, the battery model and the one core patch (safe to rerun)
 
-# one lifetime run: NODES SEED OF  (OF: 0 = our energy OF, 1 = MRHOF, 2 = OF0)
-bash experiments/run_lifetime.sh 30 1 1
+# one lifetime run: NODES SEED VARIANT
+#   VARIANT: of0 | mrhof | base | gating | depletion | adaptive | full | fixedw
+bash experiments/run_lifetime.sh 30 1 full
 
-# a matrix, 3 runs at a time
-bash experiments/run_batch.sh "30 50" "1" "0 1 2" 3 90000 scale-check
+# the whole evaluation in stages (see the header of the script)
+bash experiments/run_all.sh scale 3               # six scale checks first
+bash experiments/run_all.sh main 5                # then the main matrix
+python3 experiments/parse_run.py --all results/main    # -> results/main/all_runs.csv
 ```
 
 A run goes until the last client dies or the cutoff and prints one line:
@@ -56,11 +62,10 @@ A run goes until the last client dies or the cutoff and prints one line:
 LIFETIME nodes=30 clients=29 dead=29 cutoff=0 FND_s=... HND_s=... LND_s=...
 ```
 
-FND, HND and LND are the first, half (the ceil(clients/2)-th) and last client death
-in simulated seconds; the root is mains-powered and never dies. The same
-`NODES` and `SEED` always produce the identical topology and traffic, whichever
-OF is run, and every run verifies that the firmware really contains the OF it was
-asked for.
+FND, HND and LND are the first, half (the ceil(clients/2)-th) and last client death in
+simulated seconds; the root is mains-powered and never dies. The same `NODES` and `SEED`
+always give the identical topology and traffic whichever variant runs, and every run verifies
+that the firmware really contains the OF it was asked for.
 
 ## Energy model (identical for every OF)
 
