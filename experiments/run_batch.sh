@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run a matrix of lifetime experiments, several at a time.
 #
-#   experiments/run_batch.sh "NODES..." "SEEDS..." "OFS..." JOBS [MAX_SECONDS] [EXPERIMENT_NAME]
+#   experiments/run_batch.sh "NODES..." "SEEDS..." "VARIANTS..." JOBS [MAX_SECONDS] [EXPERIMENT_NAME]
 #
 # Example: the six scale checks (one 30-node and one 50-node run per OF):
 #   experiments/run_batch.sh "30 50" "1" "0 1 2" 3 90000 scale-check
@@ -14,6 +14,9 @@
 # The optional per-run overrides of run_lifetime.sh (CAPACITY_MJ, DUTY_CYCLE,
 # SPREAD_PCT, AVG_DEGREE) are passed through the environment, e.g. a capacity
 # sensitivity batch:  CAPACITY_MJ=120000.0 experiments/run_batch.sh ... sens-2x
+#
+# RESUME=1 (default) skips runs whose summary.txt already has a LIFETIME line, so an
+# interrupted batch can simply be started again; RESUME=0 reruns everything.
 #
 # Every run uses the identical scenario for a given (nodes, seed), whatever the
 # OF. Output: results/<name>/<date>/... (see run_lifetime.sh) plus
@@ -39,11 +42,21 @@ TOTAL=$(wc -l < "$JOBLIST")
 echo "$TOTAL runs, $JOBS at a time -> $BATCH"
 
 export REPO MAX NAME BATCH
+export RESUME="${RESUME:-1}"
 < "$JOBLIST" xargs -P "$JOBS" -L 1 bash -c '
-  out="$(bash "$REPO/experiments/run_lifetime.sh" "$0" "$1" "$2" "$MAX" "$NAME" 2>&1)"
+  n="$0"; sd="$1"; v="$2"
+  case "$v" in 0) label=energy;; 1) label=mrhof;; 2) label=of0;; *) label="$v";; esac
+  if [ "$RESUME" = "1" ]; then
+    prev="$(ls "$REPO"/results/"$NAME"/*/N"$n"_s"$sd"_"$label"/summary.txt 2>/dev/null | head -1)"
+    if [ -n "$prev" ] && grep -q "^LIFETIME" "$prev"; then
+      echo "nodes=$n seed=$sd of=$v rc=0 SKIPPED_ALREADY_DONE $(grep "^LIFETIME" "$prev")" | tee -a "$BATCH"
+      exit 0
+    fi
+  fi
+  out="$(bash "$REPO/experiments/run_lifetime.sh" "$n" "$sd" "$v" "$MAX" "$NAME" 2>&1)"
   rc=$?
   line="$(echo "$out" | grep -E "^LIFETIME" | head -1)"
-  echo "nodes=$0 seed=$1 of=$2 rc=$rc ${line:-NO_LIFETIME_LINE}" | tee -a "$BATCH"
+  echo "nodes=$n seed=$sd of=$v rc=$rc ${line:-NO_LIFETIME_LINE}" | tee -a "$BATCH"
 '
 rm -f "$JOBLIST"
 echo "done: $(grep -c 'rc=0' "$BATCH") of $TOTAL runs finished with exit code 0, $(grep -c NO_LIFETIME_LINE "$BATCH") without a LIFETIME line"
