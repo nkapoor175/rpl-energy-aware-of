@@ -147,7 +147,8 @@ def main():
                     help="firmware directory relative to the Contiki-NG root")
     ap.add_argument("--tx-range", type=float, default=50.0)
     ap.add_argument("--interference-range", type=float, default=100.0)
-    ap.add_argument("--avg-degree", type=float, default=8.0)
+    ap.add_argument("--avg-degree", type=float, default=10.0,
+                    help="nominal neighbour density; 10 is the frozen project value (CLAUDE.md)")
     a = ap.parse_args()
     if a.nodes < 3:
         sys.exit("need at least 3 nodes")

@@ -14,7 +14,7 @@ used for metadata when present. Written into the run folder:
 
 Log lines understood (all start with "<simulated microseconds> node-<id> "):
     [INFO: App ] Sending request K to ...            client sends request K
-    [INFO: App ] Received request 'hello K' from fd00::20X:X:X:X   the root received it (X = client id in hex)
+    [INFO: App ] Received request 'hello K' from fd00::20X:X:X:X   the root received it (2XX = client id as two hex digits)
     [INFO: App ] Received response 'hello K' from ...  the client got the answer
     ENERGY id= time= consumed_uj= capacity_uj= remaining=   every 60 s per client
     NODE_DEAD id= time=
@@ -42,7 +42,7 @@ from pathlib import Path
 
 LINE = re.compile(r"^(\d+)\s+node-(\d+)\s+(.*)$")
 SEND = re.compile(r"Sending request (\d+) to")
-RX_REQ = re.compile(r"Received request 'hello (\d+)' from fd00::20([0-9a-fA-F]+):")
+RX_REQ = re.compile(r"Received request 'hello (\d+)' from fd00::2([0-9a-fA-F]{2}):")
 RX_RESP = re.compile(r"Received response 'hello (\d+)' from")
 ENERGY = re.compile(r"ENERGY id=(\d+) time=(\d+) consumed_uj=(\d+) capacity_uj=(\d+) remaining=(\d+)")
 DEAD = re.compile(r"NODE_DEAD id=(\d+) time=(\d+)")
@@ -76,17 +76,20 @@ def na(v):
 
 
 def parse_summary(run_dir):
+    """nodes / seed / OF code / variant label, from summary.txt or the folder name."""
     meta = {}
     s = run_dir / "summary.txt"
     if s.is_file():
-        m = re.search(r"nodes=(\d+) seed=(\d+) of=(\d)", s.read_text(errors="replace"))
+        m = re.search(r"nodes=(\d+) seed=(\d+) of=(\d)(?: \((\w+)\))?", s.read_text(errors="replace"))
         if m:
-            meta = {"nodes": m.group(1), "seed": m.group(2), "of_code": m.group(3)}
+            meta = {"nodes": m.group(1), "seed": m.group(2), "of_code": m.group(3),
+                    "label": m.group(4) or ""}
     if not meta:
         m = re.match(r"N(\d+)_s(\d+)_(\w+)", run_dir.name)
         if m:
-            code = {v: k for k, v in OF_LABEL.items()}.get(m.group(3).split("_")[0], "")
-            meta = {"nodes": m.group(1), "seed": m.group(2), "of_code": code}
+            label = m.group(3).split("_")[0]
+            code = {"mrhof": "1", "of0": "2"}.get(label, "0")
+            meta = {"nodes": m.group(1), "seed": m.group(2), "of_code": code, "label": label}
     return meta
 
 
@@ -175,7 +178,7 @@ def parse_run(run_dir):
 
     row = {
         "run": run_dir.name, "nodes": nodes, "seed": meta.get("seed", ""),
-        "of_code": of_code, "of_label": OF_LABEL.get(of_code, ""),
+        "of_code": of_code, "of_label": meta.get("label") or OF_LABEL.get(of_code, ""),
         "clients": clients,
         "dead": lifetime[2] if lifetime else len(deaths),
         "cutoff": lifetime[3] if lifetime else "NA",

@@ -1,0 +1,31 @@
+stage=scale name=main started=2026-10-26T16:25:32+00:00
+git_commit= dirty=0
+--- project-conf.h (frozen energy model) ---
+#define EXPERIMENT_OF 0
+#define ENERGEST_CONF_ON 1
+#define BATTERY_SIM_CONF_DUTY_CYCLE 0.01
+#define BATTERY_SIM_CONF_CAPACITY_MJ 60000.0
+#define BATTERY_SIM_CONF_REPORT_INTERVAL_S 60
+--- objective-function constants ---
+#define W1_ETX_MILLI RPL_ENERGY_OF_CONF_W1
+#define W1_ETX_MILLI 400
+#define W2_ENERGY_MILLI RPL_ENERGY_OF_CONF_W2
+#define W2_ENERGY_MILLI 400
+#define W3_HOP_MILLI RPL_ENERGY_OF_CONF_W3
+#define W3_HOP_MILLI 200
+#define RANK_THRESHOLD 192
+#define ENERGY_GATE_PERCENTILE 20
+#define ENERGY_GATE_MIN_NEIGHBORS 5
+#define RPL_ENERGY_OF_CONF_DEPLETION_WINDOW_MINUTES 60
+#define RPL_ENERGY_OF_CONF_DEPLETION_SAMPLE_SPACING_MINUTES 10
+#define DEPLETION_RATE_REF_MILLI 10
+#define DEPLETION_PENALTY_MAX_MILLI 180
+#define ADAPTIVE_WEIGHT_INTERVAL 4
+#define ADAPTIVE_WEIGHT_STEP 50
+#define ADAPTIVE_W2_MIN 300
+#define ADAPTIVE_W2_MAX 600
+#define ADAPTIVE_SPREAD_HIGH 100
+#define ADAPTIVE_SPREAD_LOW 40
+--- topology generator default ---
+11:the expected number of neighbours within the radio range is about --avg-degree
+150:    ap.add_argument("--avg-degree", type=float, default=10.0,
